@@ -1,0 +1,13 @@
+{
+  "name": "FinanceFlow — Personal Finance Tracker",
+  "short_name": "FinanceFlow",
+  "description": "Premium Apple-inspired personal finance & budgeting tracker",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0f172a",
+  "background_color": "#f8fafc",
+  "icons": [
+    { "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/pwa-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

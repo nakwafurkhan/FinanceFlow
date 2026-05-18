@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   Apple-Inspired Design System Base Styles
+   ============================================ */
+
+@layer base {
+  html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  body {
+    @apply bg-ink-50 text-ink-900 transition-colors duration-300;
+    background-image:
+      radial-gradient(at 15% 20%, rgba(99, 102, 241, 0.06) 0px, transparent 50%),
+      radial-gradient(at 85% 80%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+    min-height: 100vh;
+  }
+
+  body.dark {
+    @apply bg-ink-950 text-ink-100;
+    background-image:
+      radial-gradient(at 15% 20%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+      radial-gradient(at 85% 80%, rgba(16, 185, 129, 0.08) 0px, transparent 50%);
+  }
+
+  ::selection {
+    @apply bg-indigo-500/30 text-ink-900 dark:text-white;
+  }
+
+  /* Custom minimal scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-ink-300 rounded-full dark:bg-ink-700;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-ink-400 dark:bg-ink-600;
+  }
+}
+
+/* ============================================
+   Reusable Component Classes
+   ============================================ */
+
+@layer components {
+  /* The hero glassmorphism card used throughout the app */
+  .glass-card {
+    @apply rounded-3xl border border-white/40 bg-white/70 backdrop-blur-xl
+           shadow-glass transition-all duration-300
+           dark:border-white/5 dark:bg-ink-900/60;
+  }
+
+  .glass-card-hover {
+    @apply hover:shadow-xl hover:-translate-y-0.5 hover:border-white/60
+           dark:hover:border-white/10;
+  }
+
+  /* Soft pill buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full
+           px-5 py-2.5 font-medium text-sm transition-all duration-200
+           shadow-soft active:scale-[0.97] disabled:opacity-50
+           disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-ink-900 text-white hover:bg-ink-800
+           dark:bg-white dark:text-ink-900 dark:hover:bg-ink-100;
+  }
+  .btn-accent {
+    @apply btn bg-indigo-500 text-white hover:bg-indigo-600 shadow-glow;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-ink-700 hover:bg-ink-200/60
+           dark:text-ink-200 dark:hover:bg-ink-800/60;
+  }
+  .btn-danger {
+    @apply btn bg-red-500/10 text-red-600 hover:bg-red-500/20
+           dark:text-red-400;
+  }
+
+  /* Inputs with soft focus glow */
+  .input {
+    @apply w-full rounded-2xl border border-ink-200/70 bg-white/70
+           px-4 py-3 text-sm placeholder-ink-400 backdrop-blur
+           focus:outline-none focus:border-indigo-400 focus:ring-4
+           focus:ring-indigo-500/10 transition-all
+           dark:border-ink-800 dark:bg-ink-900/50 dark:placeholder-ink-500;
+  }
+
+  .label {
+    @apply text-xs font-medium uppercase tracking-wider text-ink-500
+           dark:text-ink-400;
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    @apply animate-shimmer rounded-xl bg-gradient-to-r
+           from-ink-200/60 via-ink-100 to-ink-200/60
+           bg-[length:1000px_100%]
+           dark:from-ink-800/60 dark:via-ink-700/60 dark:to-ink-800/60;
+  }
+
+  /* Sidebar nav item */
+  .nav-item {
+    @apply flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm
+           font-medium text-ink-600 transition-all
+           hover:bg-ink-100 hover:text-ink-900
+           dark:text-ink-400 dark:hover:bg-ink-800/60 dark:hover:text-white;
+  }
+  .nav-item-active {
+    @apply bg-ink-900 text-white shadow-soft
+           dark:bg-white dark:text-ink-900;
+  }
+
+  /* Stat number — huge elegant typography */
+  .stat-number {
+    @apply text-3xl font-bold tracking-tight md:text-4xl;
+  }
+}
