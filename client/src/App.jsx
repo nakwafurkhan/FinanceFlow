@@ -28,6 +28,7 @@ import { useAuth } from './context/AuthContext';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AppShell from './components/AppShell';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Public — eagerly loaded because Landing is the first-paint experience
 import Landing from './pages/Landing';
@@ -77,8 +78,9 @@ export default function App() {
   }
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname.split('/')[1] || 'root'}>
+    <ErrorBoundary>
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname.split('/')[1] || 'root'}>
         {/* ============================================================
             PUBLIC
            ============================================================ */}
@@ -204,7 +206,8 @@ export default function App() {
             FALLBACK — anything else goes home
            ============================================================ */}
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </AnimatePresence>
+        </Routes>
+      </AnimatePresence>
+    </ErrorBoundary>
   );
 }
