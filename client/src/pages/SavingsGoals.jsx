@@ -6,6 +6,7 @@ import { savingsApi } from '../api/endpoints';
 import GlassCard from '../components/GlassCard';
 import Modal from '../components/Modal';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import useConfirm from '../hooks/useConfirm';
 
 export default function SavingsGoals() {
   const [goals, setGoals] = useState([]);
@@ -18,6 +19,7 @@ export default function SavingsGoals() {
     icon: '🎯',
   });
   const [contribution, setContribution] = useState('');
+  const [askConfirm, ConfirmEl] = useConfirm();
 
   const load = async () => {
     const res = await savingsApi.list();
@@ -47,10 +49,16 @@ export default function SavingsGoals() {
     load();
   };
 
-  const remove = async (id) => {
-    if (!confirm('Delete this goal?')) return;
-    await savingsApi.remove(id);
-    toast.success('Deleted');
+  const remove = async (g) => {
+    const ok = await askConfirm({
+      title: `Delete "${g.title}"?`,
+      message: 'Your progress on this goal will be lost. This cannot be undone.',
+      confirmLabel: 'Delete goal',
+      destructive: true,
+    });
+    if (!ok) return;
+    await savingsApi.remove(g._id);
+    toast.success('Goal deleted');
     load();
   };
 
@@ -88,8 +96,9 @@ export default function SavingsGoals() {
                 <div className="flex items-start justify-between">
                   <div className="text-3xl">{g.icon}</div>
                   <button
-                    onClick={() => remove(g._id)}
-                    className="text-red-400 hover:text-red-500"
+                    onClick={() => remove(g)}
+                    className="text-coral-400 hover:text-coral-500 transition-colors"
+                    aria-label="Delete goal"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -108,7 +117,7 @@ export default function SavingsGoals() {
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${pct}%` }}
-                      className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500"
+                      className="h-full rounded-full bg-gradient-brand"
                     />
                   </div>
                 </div>
@@ -210,6 +219,8 @@ export default function SavingsGoals() {
           </div>
         </form>
       </Modal>
+
+      {ConfirmEl}
     </div>
   );
 }

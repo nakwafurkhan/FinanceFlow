@@ -7,6 +7,7 @@ import ExpenseTable from '../components/ExpenseTable';
 import ExpenseForm from '../components/ExpenseForm';
 import Modal from '../components/Modal';
 import GlassCard from '../components/GlassCard';
+import useConfirm from '../hooks/useConfirm';
 
 export default function Expenses() {
   const [expenses, setExpenses] = useState([]);
@@ -21,6 +22,7 @@ export default function Expenses() {
   });
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [askConfirm, ConfirmEl] = useConfirm();
 
   const load = async () => {
     const res = await expenseApi.list(filters);
@@ -46,9 +48,15 @@ export default function Expenses() {
     setModalOpen(true);
   };
   const onDelete = async (e) => {
-    if (!confirm(`Delete "${e.description || e.category}"?`)) return;
+    const ok = await askConfirm({
+      title: 'Delete expense?',
+      message: `"${e.description || e.category}" will be permanently removed. This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
     await expenseApi.remove(e._id);
-    toast.success('Deleted');
+    toast.success('Expense deleted');
     load();
   };
   const onSearch = (e) => {
@@ -186,6 +194,8 @@ export default function Expenses() {
           onCancel={() => setModalOpen(false)}
         />
       </Modal>
+
+      {ConfirmEl}
     </div>
   );
 }

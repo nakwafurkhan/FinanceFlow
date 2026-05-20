@@ -7,6 +7,7 @@ import GlassCard from '../components/GlassCard';
 import Modal from '../components/Modal';
 import { CATEGORIES, CATEGORY_COLORS } from '../utils/constants';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import useConfirm from '../hooks/useConfirm';
 
 const FREQUENCIES = ['daily', 'weekly', 'monthly', 'yearly'];
 
@@ -20,6 +21,7 @@ export default function RecurringExpenses() {
     frequency: 'monthly',
     nextDueDate: new Date().toISOString().split('T')[0],
   });
+  const [askConfirm, ConfirmEl] = useConfirm();
 
   const load = async () => {
     const res = await recurringApi.list();
@@ -36,10 +38,16 @@ export default function RecurringExpenses() {
     load();
   };
 
-  const remove = async (id) => {
-    if (!confirm('Delete this subscription?')) return;
-    await recurringApi.remove(id);
-    toast.success('Deleted');
+  const remove = async (it) => {
+    const ok = await askConfirm({
+      title: `Cancel "${it.title}"?`,
+      message: `This will stop tracking the ${it.frequency} ${formatCurrency(it.amount)} charge for ${it.title}.`,
+      confirmLabel: 'Cancel subscription',
+      destructive: true,
+    });
+    if (!ok) return;
+    await recurringApi.remove(it._id);
+    toast.success('Subscription removed');
     load();
   };
 
@@ -92,8 +100,9 @@ export default function RecurringExpenses() {
               </div>
               <div className="text-lg font-bold">{formatCurrency(it.amount)}</div>
               <button
-                onClick={() => remove(it._id)}
-                className="text-red-400 hover:text-red-500"
+                onClick={() => remove(it)}
+                className="text-coral-400 hover:text-coral-500 transition-colors"
+                aria-label="Remove subscription"
               >
                 <Trash2 size={16} />
               </button>
@@ -170,6 +179,8 @@ export default function RecurringExpenses() {
           </div>
         </form>
       </Modal>
+
+      {ConfirmEl}
     </div>
   );
 }

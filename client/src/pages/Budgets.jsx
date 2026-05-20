@@ -7,6 +7,7 @@ import BudgetCard from '../components/BudgetCard';
 import Modal from '../components/Modal';
 import GlassCard from '../components/GlassCard';
 import { monthName } from '../utils/formatters';
+import useConfirm from '../hooks/useConfirm';
 
 export default function Budgets() {
   const now = new Date();
@@ -15,6 +16,7 @@ export default function Budgets() {
   const [budgets, setBudgets] = useState([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ category: 'Food', monthlyLimit: '' });
+  const [askConfirm, ConfirmEl] = useConfirm();
 
   const load = async () => {
     const res = await budgetApi.list({ month, year });
@@ -45,9 +47,15 @@ export default function Budgets() {
   };
 
   const onDelete = async (b) => {
-    if (!confirm(`Delete ${b.category} budget?`)) return;
+    const ok = await askConfirm({
+      title: `Delete ${b.category} budget?`,
+      message: `The monthly limit for ${b.category} will be removed for ${monthName(month)} ${year}.`,
+      confirmLabel: 'Delete budget',
+      destructive: true,
+    });
+    if (!ok) return;
     await budgetApi.remove(b._id);
-    toast.success('Deleted');
+    toast.success('Budget deleted');
     load();
   };
 
@@ -141,6 +149,8 @@ export default function Budgets() {
           </div>
         </form>
       </Modal>
+
+      {ConfirmEl}
     </div>
   );
 }

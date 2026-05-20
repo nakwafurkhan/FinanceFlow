@@ -6,6 +6,7 @@ import { incomeApi } from '../api/endpoints';
 import GlassCard from '../components/GlassCard';
 import Modal from '../components/Modal';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import useConfirm from '../hooks/useConfirm';
 
 const SOURCES = ['Salary', 'Freelance', 'Business', 'Investment', 'Gift', 'Refund', 'Other'];
 
@@ -18,6 +19,7 @@ export default function Income() {
     description: '',
     date: new Date().toISOString().split('T')[0],
   });
+  const [askConfirm, ConfirmEl] = useConfirm();
 
   const load = async () => {
     const res = await incomeApi.list();
@@ -39,10 +41,16 @@ export default function Income() {
     load();
   };
 
-  const remove = async (id) => {
-    if (!confirm('Delete this income entry?')) return;
-    await incomeApi.remove(id);
-    toast.success('Deleted');
+  const remove = async (it) => {
+    const ok = await askConfirm({
+      title: 'Delete income entry?',
+      message: `${formatCurrency(it.amount)} from ${it.source}${it.description ? ` (${it.description})` : ''} will be removed.`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
+    await incomeApi.remove(it._id);
+    toast.success('Income deleted');
     load();
   };
 
@@ -79,7 +87,7 @@ export default function Income() {
               transition={{ delay: i * 0.03 }}
               className="glass-card flex items-center gap-4 !p-4"
             >
-              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-600">
+              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-mint-500/15 text-mint-600">
                 ₹
               </div>
               <div className="min-w-0 flex-1">
@@ -88,12 +96,13 @@ export default function Income() {
                   {it.description || '—'} · {formatDate(it.date)}
                 </div>
               </div>
-              <div className="text-lg font-bold text-emerald-600">
+              <div className="text-lg font-bold text-mint-600">
                 +{formatCurrency(it.amount)}
               </div>
               <button
-                onClick={() => remove(it._id)}
-                className="text-red-400 hover:text-red-500"
+                onClick={() => remove(it)}
+                className="text-coral-400 hover:text-coral-500 transition-colors"
+                aria-label="Delete income"
               >
                 <Trash2 size={16} />
               </button>
@@ -156,6 +165,8 @@ export default function Income() {
           </div>
         </form>
       </Modal>
+
+      {ConfirmEl}
     </div>
   );
 }
