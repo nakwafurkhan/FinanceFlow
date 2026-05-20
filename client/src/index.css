@@ -2,9 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================
-   Apple-Inspired Design System Base Styles
-   ============================================ */
+/* ==============================================================
+   Apple-inspired Design System — Base Styles
+   ============================================================== */
 
 @layer base {
   html {
@@ -18,7 +18,7 @@
     @apply bg-ink-50 text-ink-900 transition-colors duration-300;
     background-image:
       radial-gradient(at 15% 20%, rgba(99, 102, 241, 0.06) 0px, transparent 50%),
-      radial-gradient(at 85% 80%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      radial-gradient(at 85% 80%, rgba(139, 92, 246, 0.05) 0px, transparent 50%);
     min-height: 100vh;
   }
 
@@ -26,11 +26,28 @@
     @apply bg-ink-950 text-ink-100;
     background-image:
       radial-gradient(at 15% 20%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-      radial-gradient(at 85% 80%, rgba(16, 185, 129, 0.08) 0px, transparent 50%);
+      radial-gradient(at 85% 80%, rgba(139, 92, 246, 0.10) 0px, transparent 50%);
   }
 
   ::selection {
-    @apply bg-indigo-500/30 text-ink-900 dark:text-white;
+    @apply bg-iris-500/30 text-ink-900 dark:text-white;
+  }
+
+  /* Honour the OS reduced-motion preference globally */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Visible keyboard focus ring across the whole app */
+  :focus-visible {
+    @apply outline-none ring-2 ring-iris-500/60 ring-offset-2 ring-offset-white dark:ring-offset-ink-950;
   }
 
   /* Custom minimal scrollbar */
@@ -49,12 +66,12 @@
   }
 }
 
-/* ============================================
+/* ==============================================================
    Reusable Component Classes
-   ============================================ */
+   ============================================================== */
 
 @layer components {
-  /* The hero glassmorphism card used throughout the app */
+  /* Glassmorphism card used throughout the app */
   .glass-card {
     @apply rounded-3xl border border-white/40 bg-white/70 backdrop-blur-xl
            shadow-glass transition-all duration-300
@@ -74,27 +91,26 @@
            disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply btn bg-ink-900 text-white hover:bg-ink-800
-           dark:bg-white dark:text-ink-900 dark:hover:bg-ink-100;
+    @apply btn bg-gradient-brand text-white shadow-glow hover:shadow-glow-lg
+           hover:scale-[1.02];
   }
   .btn-accent {
-    @apply btn bg-indigo-500 text-white hover:bg-indigo-600 shadow-glow;
+    @apply btn bg-iris-500 text-white hover:bg-iris-600 shadow-glow;
   }
   .btn-ghost {
     @apply btn bg-transparent text-ink-700 hover:bg-ink-200/60
            dark:text-ink-200 dark:hover:bg-ink-800/60;
   }
   .btn-danger {
-    @apply btn bg-red-500/10 text-red-600 hover:bg-red-500/20
-           dark:text-red-400;
+    @apply btn bg-gradient-coral text-white shadow-glow-coral hover:scale-[1.02];
   }
 
   /* Inputs with soft focus glow */
   .input {
     @apply w-full rounded-2xl border border-ink-200/70 bg-white/70
            px-4 py-3 text-sm placeholder-ink-400 backdrop-blur
-           focus:outline-none focus:border-indigo-400 focus:ring-4
-           focus:ring-indigo-500/10 transition-all
+           focus:outline-none focus:border-iris-400 focus:ring-4
+           focus:ring-iris-500/15 transition-all
            dark:border-ink-800 dark:bg-ink-900/50 dark:placeholder-ink-500;
   }
 
@@ -119,8 +135,8 @@
            dark:text-ink-400 dark:hover:bg-ink-800/60 dark:hover:text-white;
   }
   .nav-item-active {
-    @apply bg-ink-900 text-white shadow-soft
-           dark:bg-white dark:text-ink-900;
+    @apply bg-gradient-brand text-white shadow-glow
+           hover:bg-gradient-brand hover:text-white;
   }
 
   /* Stat number — huge elegant typography */

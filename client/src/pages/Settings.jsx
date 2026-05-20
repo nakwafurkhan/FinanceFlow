@@ -4,6 +4,7 @@ import { Download, Palette, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { authApi, exportApi } from '../api/endpoints';
+import { AVATAR_COLORS } from '../utils/constants';
 import GlassCard from '../components/GlassCard';
 
 export default function Settings() {
@@ -44,9 +45,12 @@ export default function Settings() {
     <div className="space-y-5">
       <h2 className="text-xl font-bold tracking-tight md:text-2xl">Settings</h2>
 
+      {/* Profile */}
       <GlassCard>
         <div className="mb-4 flex items-center gap-2">
-          <User size={16} className="text-indigo-500" />
+          <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-brand text-white shadow-soft">
+            <User size={14} />
+          </div>
           <h3 className="font-semibold">Profile</h3>
         </div>
 
@@ -72,28 +76,25 @@ export default function Settings() {
           <div>
             <label className="label mb-1.5 block">Avatar color</label>
             <div className="flex flex-wrap gap-2">
-              {['#6366F1', '#10B981', '#F59E0B', '#EC4899', '#0EA5E9', '#F97066', '#8B5CF6'].map(
-                (c) => {
-                  const selected = avatarColor === c;
-                  return (
-                    <button
-                      type="button"
-                      key={c}
-                      onClick={() => setAvatarColor(c)}
-                      aria-label={c}
-                      className="h-9 w-9 rounded-full transition-transform"
-                      style={{
-                        background: c,
-                        // boxShadow is the trick: outer ring + inner offset
-                        boxShadow: selected
-                          ? `0 0 0 2px var(--tw-ring-offset, white), 0 0 0 4px ${c}`
-                          : 'none',
-                        transform: selected ? 'scale(1.15)' : 'scale(1)',
-                      }}
-                    />
-                  );
-                }
-              )}
+              {AVATAR_COLORS.map((c) => {
+                const selected = avatarColor === c;
+                return (
+                  <button
+                    type="button"
+                    key={c}
+                    onClick={() => setAvatarColor(c)}
+                    aria-label={c}
+                    className="h-9 w-9 rounded-full transition-transform"
+                    style={{
+                      background: c,
+                      boxShadow: selected
+                        ? `0 0 0 2px var(--tw-ring-offset, white), 0 0 0 4px ${c}`
+                        : 'none',
+                      transform: selected ? 'scale(1.15)' : 'scale(1)',
+                    }}
+                  />
+                );
+              })}
             </div>
           </div>
 
@@ -105,9 +106,12 @@ export default function Settings() {
         </form>
       </GlassCard>
 
+      {/* Appearance */}
       <GlassCard>
         <div className="mb-4 flex items-center gap-2">
-          <Palette size={16} className="text-indigo-500" />
+          <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-iris-500 text-white shadow-soft">
+            <Palette size={14} />
+          </div>
           <h3 className="font-semibold">Appearance</h3>
         </div>
         <div className="flex items-center justify-between">
@@ -121,9 +125,12 @@ export default function Settings() {
         </div>
       </GlassCard>
 
+      {/* Export */}
       <GlassCard>
         <div className="mb-4 flex items-center gap-2">
-          <Download size={16} className="text-indigo-500" />
+          <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-mint text-white shadow-soft">
+            <Download size={14} />
+          </div>
           <h3 className="font-semibold">Export your data</h3>
         </div>
         <p className="mb-4 text-sm text-ink-500">
