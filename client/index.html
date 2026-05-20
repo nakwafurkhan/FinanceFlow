@@ -47,9 +47,11 @@
     <link rel="preconnect" href="https://financeflow-6xau.onrender.com" />
     <link rel="dns-prefetch" href="https://financeflow-6xau.onrender.com" />
 
-    <!-- Typography -->
+    <!-- Typography — trimmed from 7 weights to 3 (400 body, 500 medium, 700 bold).
+         Saves ~140 KB on the critical render path. Use 600/800 sparingly via
+         font-weight on element styles; the browser will fake-bold if needed. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
   </head>

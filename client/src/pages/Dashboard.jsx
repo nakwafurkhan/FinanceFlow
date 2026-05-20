@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, lazy, Suspense, memo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Wallet,
@@ -11,44 +11,71 @@ import { analyticsApi, expenseApi, budgetApi } from '../api/endpoints';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { CATEGORY_COLORS } from '../utils/constants';
 import GlassCard from '../components/GlassCard';
-import PieChartComponent from '../components/PieChartComponent';
-import LineChartComponent from '../components/LineChartComponent';
 import SmartInsight from '../components/SmartInsight';
 import BudgetAlert from '../components/BudgetAlert';
 import { SkeletonCard, SkeletonChart } from '../components/SkeletonLoader';
 import AnimatedNumber from '../components/AnimatedNumber';
 import { useAuth } from '../context/AuthContext';
 
-// ----------------------------------------------------------
-// StatCard — accepts a number+formatter (animates) or raw JSX
-// ----------------------------------------------------------
-const StatCard = ({ icon: Icon, label, value, formatter, accent, sub, delay = 0 }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-  >
-    <GlassCard className="!p-5">
-      <div className="flex items-center justify-between">
-        <span className="label">{label}</span>
-        <div
-          className="grid h-9 w-9 place-items-center rounded-2xl text-white shadow-soft"
-          style={{ background: accent }}
-        >
-          <Icon size={16} />
-        </div>
-      </div>
-      <div className="stat-number mt-3">
-        {typeof value === 'number' && formatter ? (
-          <AnimatedNumber value={value} formatter={formatter} />
-        ) : (
-          value
-        )}
-      </div>
-      {sub && <div className="mt-1 text-xs text-ink-500">{sub}</div>}
-    </GlassCard>
-  </motion.div>
+// Recharts chunk is ~200 KB. Lazy-load the chart components so the
+// dashboard skeleton + stat cards render immediately, then charts pop
+// in once their JS arrives. The user perceives faster first paint.
+const PieChartComponent = lazy(() => import('../components/PieChartComponent'));
+const LineChartComponent = lazy(() => import('../components/LineChartComponent'));
+
+const ChartFallback = ({ height = 280 }) => (
+  <div
+    className="skeleton rounded-2xl"
+    style={{ height: `${height}px` }}
+    aria-label="Loading chart"
+  />
 );
+
+// ----------------------------------------------------------
+// StatCard — memoised so changing one card's value doesn't
+// re-render the other three.
+// ----------------------------------------------------------
+const StatCard = memo(function StatCard({
+  icon: Icon,
+  label,
+  value,
+  formatter,
+  accent,
+  sub,
+  delay = 0,
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <GlassCard className="!p-5">
+        <div className="flex items-center justify-between">
+          <span className="label">{label}</span>
+          <div
+            className="grid h-9 w-9 place-items-center rounded-2xl text-white shadow-soft"
+            style={{ background: accent }}
+          >
+            <Icon size={16} />
+          </div>
+        </div>
+        <div className="stat-number mt-3">
+          {typeof value === 'number' && formatter ? (
+            <AnimatedNumber value={value} formatter={formatter} />
+          ) : (
+            value
+          )}
+        </div>
+        {sub && <div className="mt-1 text-xs text-ink-500">{sub}</div>}
+      </GlassCard>
+    </motion.div>
+  );
+});
+
+// Pre-defined ordering for budget status — captured outside the
+// component so the sort comparator is referentially stable.
+const STATUS_ORDER = ['exceeded', 'warning', 'safe'];
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -84,11 +111,27 @@ export default function Dashboard() {
     load();
   }, []);
 
+  // Memo so the budgets array is only re-sorted when budgets actually
+  // change (not on every render the dashboard does for unrelated state).
+  const sortedBudgets = useMemo(
+    () =>
+      budgets
+        .slice()
+        .sort(
+          (a, b) =>
+            STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)
+        )
+        .slice(0, 4),
+    [budgets]
+  );
+
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <SkeletonChart />
@@ -97,6 +140,8 @@ export default function Dashboard() {
       </div>
     );
   }
+
+  const positive = (stats?.netCashflow || 0) >= 0;
 
   return (
     <div className="space-y-6">
@@ -137,12 +182,12 @@ export default function Dashboard() {
           delay={0.1}
         />
         <StatCard
-          icon={stats?.netCashflow >= 0 ? TrendingUp : TrendingDown}
+          icon={positive ? TrendingUp : TrendingDown}
           label="Net cashflow"
           value={stats?.netCashflow || 0}
           formatter={formatCurrency}
-          sub={stats?.netCashflow >= 0 ? 'Saving money' : 'Spending more than earned'}
-          accent={stats?.netCashflow >= 0 ? '#10B981' : '#F43F5E'}
+          sub={positive ? 'Saving money' : 'Spending more than earned'}
+          accent={positive ? '#10B981' : '#F43F5E'}
           delay={0.15}
         />
         <StatCard
@@ -159,7 +204,8 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Charts row */}
+      {/* Charts row — lazy-loaded so the rest of the dashboard renders
+          immediately. Skeleton placeholders hold the layout in place. */}
       <div className="grid gap-4 lg:grid-cols-3">
         <GlassCard className="lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
@@ -168,7 +214,9 @@ export default function Dashboard() {
               <p className="text-xs text-ink-500">Daily totals this month</p>
             </div>
           </div>
-          <LineChartComponent data={lineData} />
+          <Suspense fallback={<ChartFallback height={280} />}>
+            <LineChartComponent data={lineData} />
+          </Suspense>
         </GlassCard>
 
         <GlassCard>
@@ -176,7 +224,9 @@ export default function Dashboard() {
             <h3 className="font-semibold">By category</h3>
             <p className="text-xs text-ink-500">Where your money went</p>
           </div>
-          <PieChartComponent data={pieData} />
+          <Suspense fallback={<ChartFallback height={280} />}>
+            <PieChartComponent data={pieData} />
+          </Suspense>
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
             {pieData.slice(0, 6).map((p) => (
               <div key={p.category} className="flex items-center gap-1.5">
@@ -208,16 +258,8 @@ export default function Dashboard() {
         <GlassCard>
           <h3 className="mb-3 font-semibold">Budget status</h3>
           <div className="space-y-2.5">
-            {budgets.length ? (
-              budgets
-                .slice()
-                .sort(
-                  (a, b) =>
-                    ['exceeded', 'warning', 'safe'].indexOf(a.status) -
-                    ['exceeded', 'warning', 'safe'].indexOf(b.status)
-                )
-                .slice(0, 4)
-                .map((b) => <BudgetAlert key={b._id} budget={b} />)
+            {sortedBudgets.length ? (
+              sortedBudgets.map((b) => <BudgetAlert key={b._id} budget={b} />)
             ) : (
               <p className="text-sm text-ink-500">
                 Set up monthly budgets to track spending.

@@ -9,7 +9,15 @@
  * Design: an abstract "flowing F" — two stacked waves that
  * suggest both the letter F and the movement of money. Filled
  * with the brand iris→violet gradient.
+ *
+ * Perf note (Phase A): the gradient id is generated via React's
+ * useId() hook so every instance has a stable, deterministic id
+ * across re-renders. The previous Math.random() approach generated
+ * a new id on every render, which caused the SVG `fill="url(#id)"`
+ * reference to invalidate and re-paint unnecessarily.
  */
+
+import { useId } from 'react';
 
 export default function Logo({
   className = '',
@@ -17,7 +25,10 @@ export default function Logo({
   withName = false,
   monochrome = false,
 }) {
-  const gradientId = `ff-grad-${Math.random().toString(36).slice(2, 8)}`;
+  const reactId = useId();
+  // useId returns ":r1:"-style strings; strip the colons to keep the
+  // resulting id valid in SVG/CSS contexts.
+  const gradientId = `ff-grad-${reactId.replace(/:/g, '')}`;
 
   return (
     <span
@@ -41,14 +52,7 @@ export default function Logo({
         </defs>
 
         {/* Rounded square background */}
-        <rect
-          x="0"
-          y="0"
-          width="40"
-          height="40"
-          rx="10"
-          fill={`url(#${gradientId})`}
-        />
+        <rect x="0" y="0" width="40" height="40" rx="10" fill={`url(#${gradientId})`} />
 
         {/* Flowing "F" wave mark — two strokes overlapping */}
         <path
@@ -67,14 +71,7 @@ export default function Logo({
           fill="none"
           opacity="0.85"
         />
-        <path
-          d="M11 12 L 11 28"
-          stroke="white"
-          strokeWidth="3"
-          strokeLinecap="round"
-          fill="none"
-          opacity="0.95"
-        />
+        <path d="M11 12 L 11 28" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.95" />
 
         {/* Small upward accent — the "flow" rising */}
         <circle cx="29" cy="28" r="2.5" fill="white" opacity="0.9" />

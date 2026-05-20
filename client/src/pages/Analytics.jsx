@@ -1,15 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, BarChart3, PieChart, TrendingUp } from 'lucide-react';
 import { analyticsApi } from '../api/endpoints';
 import GlassCard from '../components/GlassCard';
-import PieChartComponent from '../components/PieChartComponent';
-import BarChartComponent from '../components/BarChartComponent';
-import LineChartComponent from '../components/LineChartComponent';
 import SmartInsight from '../components/SmartInsight';
 import { SkeletonChart } from '../components/SkeletonLoader';
 import { formatCurrency } from '../utils/formatters';
 import { CATEGORY_COLORS } from '../utils/constants';
+
+// Recharts chunk is ~200 KB. Lazy-load each chart so this page can
+// render its layout (titles, legend, etc.) immediately and the chart
+// JS arrives in parallel.
+const PieChartComponent = lazy(() => import('../components/PieChartComponent'));
+const BarChartComponent = lazy(() => import('../components/BarChartComponent'));
+const LineChartComponent = lazy(() => import('../components/LineChartComponent'));
+
+const ChartFallback = ({ height = 300 }) => (
+  <div
+    className="skeleton rounded-2xl"
+    style={{ height: `${height}px` }}
+    aria-label="Loading chart"
+  />
+);
 
 // Small section header used across the analytics page
 const SectionTitle = ({ icon: Icon, accent, title, subtitle }) => (
@@ -53,6 +65,14 @@ export default function Analytics() {
     })();
   }, []);
 
+  // Memoised: only recomputes when the pie data actually changes, not
+  // on every re-render of the parent. Saves a tiny bit of work but
+  // mostly demonstrates the pattern for future heavier computations.
+  const total = useMemo(
+    () => pie.reduce((s, c) => s + c.total, 0),
+    [pie]
+  );
+
   if (loading) {
     return (
       <div className="grid gap-4 lg:grid-cols-2">
@@ -64,21 +84,13 @@ export default function Analytics() {
     );
   }
 
-  const total = pie.reduce((s, c) => s + c.total, 0);
-
   return (
     <div className="space-y-5">
-      <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
         <h2 className="text-xl font-bold tracking-tight md:text-2xl">Analytics</h2>
-        <p className="text-sm text-ink-500">
-          Deep dive into your spending patterns
-        </p>
+        <p className="text-sm text-ink-500">Deep dive into your spending patterns</p>
       </motion.div>
 
-      {/* Charts grid */}
       <div className="grid gap-4 lg:grid-cols-2">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -92,7 +104,9 @@ export default function Analytics() {
               title="Category breakdown"
               subtitle="Where your money went this month"
             />
-            <PieChartComponent data={pie} height={300} />
+            <Suspense fallback={<ChartFallback height={300} />}>
+              <PieChartComponent data={pie} height={300} />
+            </Suspense>
             <div className="mt-4 space-y-1.5 text-sm">
               {pie.map((p) => {
                 const pct = total ? Math.round((p.total / total) * 100) : 0;
@@ -127,7 +141,9 @@ export default function Analytics() {
               title="Monthly comparison"
               subtitle="Last 6 months"
             />
-            <BarChartComponent data={bar} height={300} />
+            <Suspense fallback={<ChartFallback height={300} />}>
+              <BarChartComponent data={bar} height={300} />
+            </Suspense>
           </GlassCard>
         </motion.div>
 
@@ -144,7 +160,9 @@ export default function Analytics() {
               title="Daily spending trend"
               subtitle="This month"
             />
-            <LineChartComponent data={line} height={320} />
+            <Suspense fallback={<ChartFallback height={320} />}>
+              <LineChartComponent data={line} height={320} />
+            </Suspense>
           </GlassCard>
         </motion.div>
       </div>

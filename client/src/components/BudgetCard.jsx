@@ -1,13 +1,24 @@
+import { memo } from 'react';
 import { Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '../utils/formatters';
 import { CATEGORY_COLORS } from '../utils/constants';
 
-export default function BudgetCard({ budget, onDelete }) {
+/**
+ * BudgetCard
+ * --------------------------------------------------------------
+ * One card per category. Shows spent/limit, a progress bar with
+ * a tone (green/amber/red) based on the budget's status.
+ *
+ * Memoised because the parent Budgets page renders many of these
+ * in a grid; we don't want re-rendering one to trigger re-render
+ * of all the others.
+ */
+function BudgetCard({ budget, onDelete }) {
   const tone = {
-    safe: 'bg-emerald-500',
+    safe: 'bg-mint-500',
     warning: 'bg-amber-500',
-    exceeded: 'bg-red-500',
+    exceeded: 'bg-coral-500',
   }[budget.status];
 
   return (
@@ -29,7 +40,8 @@ export default function BudgetCard({ budget, onDelete }) {
         </div>
         <button
           onClick={() => onDelete?.(budget)}
-          className="text-red-400 hover:text-red-500"
+          className="text-coral-400 hover:text-coral-500 transition-colors"
+          aria-label={`Delete ${budget.category} budget`}
         >
           <Trash2 size={16} />
         </button>
@@ -54,3 +66,5 @@ export default function BudgetCard({ budget, onDelete }) {
     </motion.div>
   );
 }
+
+export default memo(BudgetCard);
