@@ -3,15 +3,17 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 
+// Map a route path → its page title. Keys match /app/* paths so the
+// title in the topbar stays accurate after the Phase 3 router move.
 const pageTitles = {
-  '/': 'Dashboard',
-  '/expenses': 'Expenses',
-  '/budgets': 'Budgets',
-  '/analytics': 'Analytics',
-  '/income': 'Income',
-  '/savings': 'Savings Goals',
-  '/recurring': 'Recurring Expenses',
-  '/settings': 'Settings',
+  '/app/dashboard': 'Dashboard',
+  '/app/expenses': 'Expenses',
+  '/app/budgets': 'Budgets',
+  '/app/analytics': 'Analytics',
+  '/app/income': 'Income',
+  '/app/savings': 'Savings Goals',
+  '/app/recurring': 'Recurring Expenses',
+  '/app/settings': 'Settings',
 };
 
 export default function AppShell() {

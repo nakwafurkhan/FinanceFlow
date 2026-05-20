@@ -14,16 +14,17 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { clsx } from '../utils/cx';
 import useMediaQuery from '../hooks/useMediaQuery';
+import Logo from './Logo';
 
 const links = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/expenses', label: 'Expenses', icon: Receipt },
-  { to: '/budgets', label: 'Budgets', icon: PiggyBank },
-  { to: '/analytics', label: 'Analytics', icon: TrendingUp },
-  { to: '/income', label: 'Income', icon: Wallet },
-  { to: '/savings', label: 'Savings Goals', icon: Target },
-  { to: '/recurring', label: 'Recurring', icon: Repeat },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/app/expenses', label: 'Expenses', icon: Receipt },
+  { to: '/app/budgets', label: 'Budgets', icon: PiggyBank },
+  { to: '/app/analytics', label: 'Analytics', icon: TrendingUp },
+  { to: '/app/income', label: 'Income', icon: Wallet },
+  { to: '/app/savings', label: 'Savings Goals', icon: Target },
+  { to: '/app/recurring', label: 'Recurring', icon: Repeat },
+  { to: '/app/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function Sidebar({ open, onClose }) {
@@ -33,7 +34,9 @@ export default function Sidebar({ open, onClose }) {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    // Sign out returns the user to the public landing page, not the
+    // bare /login screen — landing is more welcoming for a fresh session.
+    navigate('/');
   };
 
   // On desktop the sidebar is always visible (no animation).
@@ -63,15 +66,10 @@ export default function Sidebar({ open, onClose }) {
         )}
       >
         {/* Brand */}
-        <div className="mb-6 flex items-center gap-3 px-1">
-          <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-emerald-500 text-white shadow-glow">
-            <span className="text-lg font-bold">F</span>
-          </div>
-          <div>
-            <div className="text-base font-bold leading-tight">FinanceFlow</div>
-            <div className="text-[11px] uppercase tracking-wider text-ink-500">
-              Money OS
-            </div>
+        <div className="mb-6 px-1">
+          <Logo withName size={36} />
+          <div className="mt-1 ml-12 text-[11px] uppercase tracking-wider text-ink-500">
+            Money OS
           </div>
         </div>
 
@@ -81,7 +79,7 @@ export default function Sidebar({ open, onClose }) {
             <NavLink
               key={to}
               to={to}
-              end={to === '/'}
+              end={to === '/app/dashboard'}
               onClick={onClose}
               className={({ isActive }) =>
                 clsx('nav-item', isActive && 'nav-item-active')
@@ -98,7 +96,7 @@ export default function Sidebar({ open, onClose }) {
             <div className="flex items-center gap-3 rounded-2xl border border-ink-200/60 bg-white/60 p-3 backdrop-blur dark:border-ink-800 dark:bg-ink-900/60">
               <div
                 className="grid h-9 w-9 place-items-center rounded-full text-sm font-semibold text-white shadow-soft"
-                style={{ background: user.avatarColor || '#6366F1' }}
+                style={{ background: user.avatarColor || '#6366f1' }}
               >
                 {user.name?.[0]?.toUpperCase() || 'U'}
               </div>

@@ -20,7 +20,8 @@ export default function Register() {
     try {
       await register(form.name, form.email, form.password);
       toast.success('Account created!');
-      nav('/');
+      // Phase 3 routing: signed-in home is /app/dashboard
+      nav('/app/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Registration failed');
     } finally {
@@ -36,7 +37,7 @@ export default function Register() {
         className="w-full max-w-md glass-card p-8 md:p-10"
       >
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-4 grid h-14 w-14 place-items-center rounded-3xl bg-gradient-to-br from-indigo-500 to-emerald-500 text-white shadow-glow">
+          <div className="mb-4 grid h-14 w-14 place-items-center rounded-3xl bg-gradient-brand text-white shadow-glow">
             <span className="text-2xl font-bold">F</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
@@ -86,7 +87,7 @@ export default function Register() {
 
         <p className="mt-6 text-center text-sm text-ink-500">
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-indigo-500 hover:underline">
+          <Link to="/login" className="font-medium text-iris-600 hover:underline">
             Sign in
           </Link>
         </p>

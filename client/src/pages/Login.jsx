@@ -16,7 +16,8 @@ export default function Login() {
     try {
       await login(form.email, form.password);
       toast.success('Welcome back 👋');
-      nav('/');
+      // Phase 3 routing: signed-in home is /app/dashboard
+      nav('/app/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed');
     } finally {
@@ -33,7 +34,7 @@ export default function Login() {
         className="w-full max-w-md glass-card p-8 md:p-10"
       >
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-4 grid h-14 w-14 place-items-center rounded-3xl bg-gradient-to-br from-indigo-500 to-emerald-500 text-white shadow-glow">
+          <div className="mb-4 grid h-14 w-14 place-items-center rounded-3xl bg-gradient-brand text-white shadow-glow">
             <span className="text-2xl font-bold">F</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
@@ -76,7 +77,7 @@ export default function Login() {
 
         <p className="mt-6 text-center text-sm text-ink-500">
           Don't have an account?{' '}
-          <Link to="/register" className="font-medium text-indigo-500 hover:underline">
+          <Link to="/register" className="font-medium text-iris-600 hover:underline">
             Create one
           </Link>
         </p>
