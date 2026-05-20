@@ -4,34 +4,88 @@
 
 ### Personal Finance & Budgeting Tracker
 
-**A premium, Apple-inspired MERN-stack dashboard with JWT auth,
-MongoDB aggregation analytics, and installable PWA support.**
+**A premium MERN-stack dashboard with JWT auth, MongoDB aggregation
+analytics, dark mode, and installable PWA support — designed
+end-to-end with an Apple-inspired aesthetic.**
 
 [![Stack](https://img.shields.io/badge/Stack-MERN-6366F1?style=flat-square)](https://www.mongodb.com/mern-stack)
-[![Design](https://img.shields.io/badge/Design-Apple--inspired-10B981?style=flat-square)](https://developer.apple.com/design/human-interface-guidelines/)
-[![PWA](https://img.shields.io/badge/PWA-ready-0EA5E9?style=flat-square)](https://web.dev/progressive-web-apps/)
+[![Design](https://img.shields.io/badge/Design-Apple--inspired-8B5CF6?style=flat-square)](https://developer.apple.com/design/human-interface-guidelines/)
+[![PWA](https://img.shields.io/badge/PWA-ready-10B981?style=flat-square)](https://web.dev/progressive-web-apps/)
 [![License](https://img.shields.io/badge/License-MIT-F59E0B?style=flat-square)](./LICENSE)
+[![Author](https://img.shields.io/badge/Author-@nakwafurkhan-1f2937?style=flat-square&logo=github)](https://github.com/nakwafurkhan)
 
-[**Live Demo**](https://finance-flow-theta-indol.vercel.app) · [Documentation](./docs) · [Report Bug](https://github.com/nakwafurkhan/FinanceFlow/issues)
+[**▶ Live Demo**](https://finance-flow-theta-indol.vercel.app) ·
+[**📖 Documentation**](./docs) ·
+[**🐛 Report Bug**](https://github.com/nakwafurkhan/FinanceFlow/issues)
 
 </div>
 
 ---
 
-> **Note**: this is a final-year viva-ready portfolio project showcasing
-> the full MERN stack — auth, CRUD, complex queries via MongoDB
-> aggregation pipelines, charts, exports, and PWA install. The
-> backend wakes from cold-start in ~30 seconds (Render free tier) on
-> the first request.
+## 🚀 How to use it
+
+There are two ways to try FinanceFlow — pick whichever fits your time budget.
+
+### Option A — Use the live demo (30 seconds)
+
+The fastest way. A seeded demo account is loaded with a full month of
+sample expenses, budgets, and income so you can click around immediately.
+
+> 🔗 **Open the live app**: **[finance-flow-theta-indol.vercel.app](https://finance-flow-theta-indol.vercel.app)**
+>
+> 🧪 **Demo credentials** (pre-filled on the login form):
+>   - **Email**: `demo@financeflow.app`
+>   - **Password**: `demo1234`
+
+> ⏱ **A note on the first load**: the backend runs on Render's free tier
+> and sleeps after 15 minutes of inactivity. If you're the first visitor in
+> a while, the first API call (e.g. login) takes ~30 seconds while the
+> Node process wakes up. Subsequent calls are fast.
+
+### Option B — Run it locally (5 minutes)
+
+You'll need **Node.js 18+**, **npm**, and a free **MongoDB Atlas** cluster.
+
+**1. Clone the repo**
+
+```bash
+git clone https://github.com/nakwafurkhan/FinanceFlow.git
+cd FinanceFlow
+```
+
+**2. Start the backend** (terminal 1)
+
+```bash
+cd server
+cp .env.example .env
+# Open .env and fill in:
+#   MONGO_URI   → your Atlas connection string
+#   JWT_SECRET  → run: openssl rand -hex 32
+npm install
+npm run seed    # optional: populates demo data
+npm run dev     # → http://localhost:8080
+```
+
+**3. Start the frontend** (terminal 2)
+
+```bash
+cd client
+echo "VITE_API_URL=http://localhost:8080/api" > .env
+npm install
+npm run dev     # → http://localhost:5173
+```
+
+**4. Open the app**
+
+Visit [http://localhost:5173](http://localhost:5173) and sign in
+(if you ran the seed) with `demo@financeflow.app` / `demo1234`, or
+click "Create one" on the login screen.
 
 ---
 
 ## 📸 Screenshots
 
 <div align="center">
-
-<!-- Replace these placeholder URLs once you capture screenshots and host them
-     in the repo under client/public/screenshots/ or paste imgur URLs. -->
 
 | Dashboard | Analytics | Budgets |
 |:---:|:---:|:---:|
@@ -43,7 +97,7 @@ MongoDB aggregation analytics, and installable PWA support.**
 
 </div>
 
-> 🛈 **For maintainers**: drop your screenshots in
+> 🛈 **Maintainer note**: drop your screenshots at
 > `client/public/screenshots/` with the filenames above and they'll render
 > automatically. Recommended size: 1440×900 desktop, 390×844 mobile.
 
@@ -69,7 +123,7 @@ MongoDB aggregation analytics, and installable PWA support.**
 - 📱 **PWA support** — installable on iOS, Android, macOS, Windows
 - 🌙 **Dark mode** — system-aware, persistent
 - 🎬 **Smooth animations** — Framer Motion page + element transitions
-- 🍎 **Apple-style design** — glassmorphism, soft shadows, Inter typography
+- 🤖 **AI insights** *(coming soon)* — OpenAI-powered spending Q&A
 
 ---
 
@@ -125,8 +179,8 @@ financeflow/
 │       ├── api/           Axios instance + per-resource endpoints
 │       ├── components/    AppShell, ProtectedRoute, reusable UI
 │       ├── context/       Auth + Theme React Contexts
-│       ├── hooks/         Custom hooks
-│       ├── pages/         10 routed pages (Dashboard, Expenses, …)
+│       ├── hooks/         Custom hooks (useInView, useMediaQuery)
+│       ├── pages/         Landing + 10 routed app pages
 │       ├── utils/         Formatters, constants
 │       ├── App.jsx        Router + animated transitions
 │       └── main.jsx       React entry point
@@ -155,52 +209,13 @@ financeflow/
 
 ---
 
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js 18+
-- npm
-- A MongoDB Atlas cluster (free tier works — [cloud.mongodb.com](https://cloud.mongodb.com))
-
-### 1) Backend
-
-```bash
-cd server
-cp .env.example .env
-# Open .env and fill in MONGO_URI + a long random JWT_SECRET:
-#   openssl rand -hex 32
-npm install
-npm run seed          # optional — populates demo data
-npm run dev           # → http://localhost:5000
-```
-
-### 2) Frontend (in a second terminal)
-
-```bash
-cd client
-echo "VITE_API_URL=http://localhost:5000/api" > .env
-npm install
-npm run dev           # → http://localhost:5173
-```
-
-### 3) Log in
-
-If you ran `npm run seed`:
-- **Email**: `demo@financeflow.app`
-- **Password**: `demo1234`
-
-Otherwise, click "Create one" on the login screen.
-
----
-
 ## 🔐 Environment Variables
 
 ### `server/.env`
 
 | Variable | Description |
 |---|---|
-| `PORT` | Server port (default 5000) |
+| `PORT` | Server port (default 5000, set to 8080 locally) |
 | `MONGO_URI` | MongoDB Atlas connection string |
 | `JWT_SECRET` | Long random string used to sign JWTs (use `openssl rand -hex 32`) |
 | `JWT_EXPIRES_IN` | Token lifetime, default `30d` |
@@ -211,7 +226,7 @@ Otherwise, click "Create one" on the login screen.
 
 | Variable | Description |
 |---|---|
-| `VITE_API_URL` | Backend base URL (e.g., `http://localhost:5000/api` in dev, `https://your-backend.onrender.com/api` in prod) |
+| `VITE_API_URL` | Backend API base URL (e.g., `http://localhost:8080/api` locally, `https://your-backend.onrender.com/api` in production) |
 
 ---
 
@@ -328,6 +343,7 @@ The [`docs/`](./docs) folder contains a complete viva-prep package:
 
 ## 🗺️ Roadmap
 
+- [ ] **AI insights** — OpenAI-powered conversational assistant for spending Q&A
 - [ ] Automated tests (Jest + Supertest for backend, Vitest + RTL for frontend)
 - [ ] Migrate to TypeScript
 - [ ] Short-lived access tokens + refresh tokens in HttpOnly cookies
@@ -339,16 +355,37 @@ The [`docs/`](./docs) folder contains a complete viva-prep package:
 
 ---
 
+## 👤 About the author
+
+<div align="center">
+
+### Nakwa Furkhan
+**Full-stack developer · MERN · Designer-engineer**
+
+[![GitHub](https://img.shields.io/badge/GitHub-@nakwafurkhan-1f2937?style=for-the-badge&logo=github)](https://github.com/nakwafurkhan)
+[![FinanceFlow](https://img.shields.io/badge/Star_this_project-6366F1?style=for-the-badge&logo=github)](https://github.com/nakwafurkhan/FinanceFlow)
+
+FinanceFlow is my final-year MERN portfolio project — designed,
+engineered, and deployed end-to-end. Built to demonstrate the full stack:
+auth, CRUD, aggregation pipelines, charts, exports, PWA, and modern
+deployment practices.
+
+If you found this useful, **please give the repo a ⭐** — it helps a lot.
+And if you're hiring junior or new-grad full-stack developers, I'd love
+to chat.
+
+</div>
+
+---
+
 ## 📄 License
 
-[MIT](./LICENSE) — feel free to use this for learning and portfolio purposes.
+[MIT](./LICENSE) — free to use for learning, portfolio, and commercial purposes.
 
 ---
 
 <div align="center">
 
-Built with ☕ and curiosity by [**Nakwa Furkhan**](https://github.com/nakwafurkhan)
-
-If this project helped you, leave a ⭐
+Built with ☕ and curiosity · © 2026 [Nakwa Furkhan](https://github.com/nakwafurkhan)
 
 </div>

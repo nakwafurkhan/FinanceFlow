@@ -85,6 +85,16 @@ export default function Login() {
           Demo: demo@financeflow.app / demo1234
         </p>
       </motion.div>
+
+      {/* Author credit */}
+      <a
+        href="https://github.com/nakwafurkhan"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 text-xs text-ink-400 hover:text-iris-600 dark:hover:text-iris-300 transition"
+      >
+        Built by @nakwafurkhan
+      </a>
     </div>
   );
 }

@@ -535,6 +535,84 @@ export default function Landing() {
       </section>
 
       {/* ============================================================
+          MADE BY — author credit section
+         ============================================================ */}
+      <section className="py-16 lg:py-20 px-6 lg:px-8 bg-gradient-to-b from-white to-ink-50/50 dark:from-ink-950 dark:to-ink-900/50">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-100px' }}
+          variants={stagger}
+          className="max-w-2xl mx-auto text-center"
+        >
+          <motion.span
+            variants={fadeUp}
+            className="inline-block text-iris-600 dark:text-iris-400 text-sm font-semibold uppercase tracking-wider"
+          >
+            Made by
+          </motion.span>
+          <motion.a
+            variants={fadeUp}
+            href="https://github.com/nakwafurkhan"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 group inline-flex items-center gap-4 px-4 py-3 rounded-2xl hover:bg-white dark:hover:bg-ink-900 transition-colors"
+          >
+            <img
+              src="https://avatars.githubusercontent.com/nakwafurkhan"
+              alt="Nakwa Furkhan"
+              loading="lazy"
+              className="w-14 h-14 rounded-full ring-2 ring-iris-200 dark:ring-iris-800/60 shadow-soft group-hover:ring-iris-400 transition"
+              onError={(e) => {
+                // Fall back to a gradient circle if GitHub avatar fails
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            <div className="text-left">
+              <div className="text-xl font-bold tracking-tight group-hover:text-iris-600 dark:group-hover:text-iris-300 transition-colors">
+                Nakwa Furkhan
+              </div>
+              <div className="text-sm text-ink-500 dark:text-ink-400 flex items-center gap-1.5">
+                <Github className="w-3.5 h-3.5" />
+                @nakwafurkhan
+              </div>
+            </div>
+          </motion.a>
+          <motion.p
+            variants={fadeUp}
+            className="mt-6 text-ink-600 dark:text-ink-300 text-sm leading-relaxed"
+          >
+            FinanceFlow is a final-year MERN portfolio project — designed,
+            engineered, and shipped end-to-end. If you like what you see, give
+            the repo a star, share it with a friend who builds, or just say hi.
+          </motion.p>
+          <motion.div
+            variants={fadeUp}
+            className="mt-6 flex flex-wrap justify-center gap-3"
+          >
+            <a
+              href="https://github.com/nakwafurkhan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-ink-900 dark:bg-white text-white dark:text-ink-900 text-sm font-semibold hover:opacity-90 transition"
+            >
+              <Github className="w-4 h-4" />
+              Follow on GitHub
+            </a>
+            <a
+              href="https://github.com/nakwafurkhan/FinanceFlow"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-brand text-white text-sm font-semibold shadow-glow hover:shadow-glow-lg transition-shadow"
+            >
+              <Sparkles className="w-4 h-4" />
+              Star FinanceFlow
+            </a>
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* ============================================================
           FOOTER
          ============================================================ */}
       <footer className="border-t border-ink-100 dark:border-ink-800 py-10 px-6 lg:px-8">
@@ -561,16 +639,15 @@ export default function Landing() {
           </div>
         </div>
         <p className="mt-6 text-center text-xs text-ink-400 dark:text-ink-500">
-          Built with care by{' '}
+          © {new Date().getFullYear()} FinanceFlow · Designed and built by{' '}
           <a
             href="https://github.com/nakwafurkhan"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-iris-600 dark:hover:text-iris-300 underline-offset-2 hover:underline"
+            className="font-semibold text-iris-600 dark:text-iris-400 hover:underline underline-offset-2"
           >
             Nakwa Furkhan
           </a>
-          .
         </p>
       </footer>
     </div>
