@@ -12,7 +12,7 @@ MongoDB aggregation analytics, and installable PWA support.**
 [![PWA](https://img.shields.io/badge/PWA-ready-0EA5E9?style=flat-square)](https://web.dev/progressive-web-apps/)
 [![License](https://img.shields.io/badge/License-MIT-F59E0B?style=flat-square)](./LICENSE)
 
-[**Live Demo**](https://financeflow.vercel.app) · [Documentation](./docs) · [Report Bug](https://github.com/nakwafurkhan/FinanceFlow/issues)
+[**Live Demo**](https://finance-flow-theta-indol.vercel.app) · [Documentation](./docs) · [Report Bug](https://github.com/nakwafurkhan/FinanceFlow/issues)
 
 </div>
 
