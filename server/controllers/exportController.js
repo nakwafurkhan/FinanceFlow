@@ -54,7 +54,10 @@ const CATEGORY_COLORS = {
 // Helpers
 // ----------------------------------------------------------------
 const fetchExpenses = async (userId, { startDate, endDate } = {}) => {
-  const filter = { userId };
+  // NOTE: the Expense schema uses `user` (an ObjectId ref) as the
+  // owner field. Don't rename to `userId` — that breaks the index and
+  // returns an empty result.
+  const filter = { user: userId };
   if (startDate || endDate) {
     filter.date = {};
     if (startDate) filter.date.$gte = new Date(startDate);
