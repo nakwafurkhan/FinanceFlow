@@ -40,25 +40,48 @@ app.set('trust proxy', 1);
 
 // 4) CORS
 //
-// Why this is shaped the way it is:
-//   - We use an allow-list (CLIENT_ORIGIN can be a comma-separated list of
-//     allowed origins, e.g. "http://localhost:5173,https://myapp.vercel.app").
-//   - The spec disallows `credentials: true` together with `origin: "*"`, so
-//     we must echo a specific origin back. The function form below does that.
-//   - Tools like curl/postman send no Origin header — we allow those for
-//     local development convenience.
+// We accept a comma-separated CLIENT_ORIGIN list and normalise both the
+// list entries and incoming Origin headers (strip trailing slash, lowercase
+// host) so trivial mismatches don't break the deploy. When an origin isn't
+// allowed we log it (very useful in Render logs) and pass `false` to the
+// cors callback — this returns a clean CORS rejection instead of throwing
+// an Error that would otherwise bubble to the 500 error handler.
+const normaliseOrigin = (s) => {
+  if (!s) return '';
+  try {
+    const u = new URL(s.trim());
+    // url.origin already lowercases the host and drops trailing slashes
+    return u.origin;
+  } catch {
+    // Allow bare values like "http://localhost:5173" that already look fine
+    return s.trim().replace(/\/+$/, '').toLowerCase();
+  }
+};
+
 const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
   .split(',')
-  .map((s) => s.trim())
+  .map(normaliseOrigin)
   .filter(Boolean);
+
+console.log('CORS allow-list:', allowedOrigins);
 
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow non-browser requests (curl, server-to-server, mobile apps)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error(`CORS: origin ${origin} is not allowed`));
+      const incoming = normaliseOrigin(origin);
+      if (allowedOrigins.includes(incoming)) return callback(null, true);
+      // Log the mismatch so we can diagnose from Render logs
+      console.warn(
+        `CORS: rejected origin "${origin}" (normalised: "${incoming}"). Allow-list: ${JSON.stringify(
+          allowedOrigins
+        )}`
+      );
+      // Return false (not Error) so the CORS middleware sends a clean
+      // response without the allow-origin header instead of throwing
+      // a 500 inside the error handler
+      return callback(null, false);
     },
     credentials: true,
   })
@@ -75,6 +98,7 @@ app.get('/api/health', (req, res) =>
     ok: true,
     name: 'FinanceFlow API',
     env: process.env.NODE_ENV || 'development',
+    allowedOrigins,
     time: new Date().toISOString(),
   })
 );
