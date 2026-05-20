@@ -1,10 +1,16 @@
 /**
  * controllers/expenseController.js
- * --------------------------------------------
+ * ----------------------------------------------------------------
  * CRUD + filtering + pagination for the user's expenses.
  *
  * Every query is scoped by `user: req.user._id` so users cannot see
  * each other's data even if they crafted a URL with someone else's ID.
+ *
+ * Perf note (Phase B): the list query now uses `.lean()` which returns
+ * plain JS objects instead of full Mongoose documents. We don't need
+ * Mongoose document features (virtuals, instance methods, save hooks)
+ * to ship JSON to the client — `.lean()` is typically 30 to 50 percent
+ * faster on paginated lists.
  */
 
 const asyncHandler = require('express-async-handler');
@@ -70,11 +76,13 @@ const getExpenses = asyncHandler(async (req, res) => {
   const pageNum = Math.max(1, Number(page));
   const limitNum = Math.max(1, Math.min(100, Number(limit)));
 
+  // .lean() returns plain JS — faster, no Mongoose hydration overhead
   const [items, total] = await Promise.all([
     Expense.find(filter)
       .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
       .skip((pageNum - 1) * limitNum)
-      .limit(limitNum),
+      .limit(limitNum)
+      .lean(),
     Expense.countDocuments(filter),
   ]);
 
@@ -92,7 +100,10 @@ const getExpenses = asyncHandler(async (req, res) => {
 // @route  GET /api/expenses/:id
 // @access Private
 const getExpenseById = asyncHandler(async (req, res) => {
-  const exp = await Expense.findOne({ _id: req.params.id, user: req.user._id });
+  const exp = await Expense.findOne({
+    _id: req.params.id,
+    user: req.user._id,
+  }).lean();
   if (!exp) {
     res.status(404);
     throw new Error('Expense not found');

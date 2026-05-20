@@ -1,6 +1,6 @@
 /**
  * models/SavingsGoal.js
- * --------------------------------------------
+ * --------------------------------------------------------------
  * "I want to save ₹50,000 for a Macbook by Dec 2026."
  *
  * progress = (savedAmount / targetAmount) * 100  (computed virtually).
@@ -30,5 +30,8 @@ savingsGoalSchema.virtual('progressPercent').get(function () {
   if (!this.targetAmount) return 0;
   return Math.min(100, Math.round((this.savedAmount / this.targetAmount) * 100));
 });
+
+// Compound index for the typical list query: "all my goals, newest first"
+savingsGoalSchema.index({ user: 1, createdAt: -1 });
 
 module.exports = mongoose.model('SavingsGoal', savingsGoalSchema);

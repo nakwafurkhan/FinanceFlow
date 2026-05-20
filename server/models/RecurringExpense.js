@@ -1,6 +1,6 @@
 /**
  * models/RecurringExpense.js
- * --------------------------------------------
+ * --------------------------------------------------------------
  * Subscriptions and bills that repeat on a schedule (Netflix, rent, etc.).
  * The frontend uses these to project upcoming costs and add reminders.
  */
@@ -42,5 +42,8 @@ const recurringSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Compound index for the "what subscriptions are due soon" query
+recurringSchema.index({ user: 1, nextDueDate: 1 });
 
 module.exports = mongoose.model('RecurringExpense', recurringSchema);
