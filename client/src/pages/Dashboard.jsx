@@ -15,6 +15,7 @@ import SmartInsight from '../components/SmartInsight';
 import BudgetAlert from '../components/BudgetAlert';
 import { SkeletonCard, SkeletonChart } from '../components/SkeletonLoader';
 import AnimatedNumber from '../components/AnimatedNumber';
+import AiInsights from '../components/AiInsights';
 import { useAuth } from '../context/AuthContext';
 
 // Recharts chunk is ~200 KB. Lazy-load the chart components so the
@@ -240,6 +241,9 @@ export default function Dashboard() {
           </div>
         </GlassCard>
       </div>
+
+      {/* AI panel — insights + chat, grounded in the user's own data */}
+      <AiInsights />
 
       {/* Insights + budgets + recent */}
       <div className="grid gap-4 lg:grid-cols-3">

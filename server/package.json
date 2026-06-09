@@ -1,6 +1,6 @@
 {
   "name": "financeflow-server",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "FinanceFlow backend — Personal Finance & Budgeting Tracker API",
   "main": "server.js",
   "type": "commonjs",
@@ -24,6 +24,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.1",
     "morgan": "^1.10.0",
+    "openai": "^4.67.3",
     "pdfkit": "^0.15.0"
   },
   "devDependencies": {

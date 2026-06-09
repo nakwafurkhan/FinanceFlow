@@ -63,6 +63,14 @@ export const recurringApi = {
   remove: (id) => api.delete(`/recurring/${id}`),
 };
 
+// AI — OpenAI-powered insights + chat (degrades gracefully if the server
+// has no OPENAI_API_KEY; check `configured` on the response).
+export const aiApi = {
+  status: () => api.get('/ai/status'),
+  insights: (params) => api.get('/ai/insights', { params }),
+  chat: (message, history = []) => api.post('/ai/chat', { message, history }),
+};
+
 /**
  * EXPORT
  * ------------------------------------------------------------

@@ -7,7 +7,7 @@
  *   1. Load environment variables (.env)
  *   2. Connect to MongoDB Atlas
  *   3. Initialise Express + middleware (compression, cors, json, morgan)
- *   4. Rate-limit the auth endpoints to slow credential-stuffing
+ *   4. Rate-limit the auth + AI endpoints
  *   5. Register API routes under /api/*
  *   6. Mount 404 + central error handlers
  *   7. Start listening on PORT
@@ -31,6 +31,7 @@ const incomeRoutes = require('./routes/incomeRoutes');
 const savingsGoalRoutes = require('./routes/savingsGoalRoutes');
 const recurringRoutes = require('./routes/recurringRoutes');
 const exportRoutes = require('./routes/exportRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 // 1) DB connection
 connectDB();
@@ -112,6 +113,7 @@ app.get('/api/health', (req, res) => {
     name: 'FinanceFlow API',
     env: process.env.NODE_ENV || 'development',
     allowedOrigins,
+    aiEnabled: !!process.env.OPENAI_API_KEY,
     time: new Date().toISOString(),
   });
 });
@@ -125,18 +127,33 @@ const authLimiter = rateLimit({
   max: 5,
   message: {
     success: false,
-    message:
-      'Too many attempts. Please wait 15 minutes and try again.',
+    message: 'Too many attempts. Please wait 15 minutes and try again.',
   },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Only apply the limiter to login / register, NOT to /api/auth/me or
-// the profile update endpoint — those are normal authenticated calls
-// the React app may make frequently.
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+
+// 8b) Rate-limit the AI endpoints separately — these call OpenAI, which
+// costs money per request. 20 requests per 15 minutes per IP is generous
+// for a real user but caps abuse / runaway loops. /status is excluded
+// because it's a free local check.
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: {
+    success: false,
+    message:
+      'AI request limit reached (20 per 15 minutes). Please wait a little while.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === '/status',
+});
+
+app.use('/api/ai', aiLimiter);
 
 // 9) Mount routes
 app.use('/api/auth', authRoutes);
@@ -147,6 +164,7 @@ app.use('/api/income', incomeRoutes);
 app.use('/api/savings', savingsGoalRoutes);
 app.use('/api/recurring', recurringRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/ai', aiRoutes);
 
 // 10) 404 + error handler (must be LAST)
 app.use(notFound);
