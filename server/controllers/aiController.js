@@ -32,9 +32,19 @@ const { toObjectId } = require('../utils/aggregations');
 
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
+// Provider-agnostic: the OpenAI SDK can talk to ANY OpenAI-compatible
+// API (Groq, Google Gemini, OpenRouter, Cerebras, ...) just by changing
+// the base URL. Set OPENAI_BASE_URL to switch providers without code
+// changes. Examples:
+//   Groq    → https://api.groq.com/openai/v1     (model: llama-3.3-70b-versatile)
+//   Gemini  → https://generativelanguage.googleapis.com/v1beta/openai/  (gemini-2.0-flash)
+//   OpenRtr → https://openrouter.ai/api/v1        (meta-llama/llama-3.3-70b-instruct:free)
+// Leave it unset to use OpenAI directly.
+const BASE_URL = process.env.OPENAI_BASE_URL || undefined;
+
 // ----------------------------------------------------------------
-// Lazy OpenAI client. Built on first use so the server boots even if
-// the `openai` package or the API key is absent.
+// Lazy OpenAI-compatible client. Built on first use so the server boots
+// even if the `openai` package or the API key is absent.
 // ----------------------------------------------------------------
 let _client = null;
 let _clientTried = false;
@@ -46,13 +56,64 @@ function getClient() {
   try {
     // eslint-disable-next-line global-require
     const OpenAI = require('openai');
-    _client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    _client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: BASE_URL, // undefined → defaults to OpenAI
+    });
+    if (BASE_URL) console.log(`[ai] using custom base URL: ${BASE_URL} (model: ${MODEL})`);
   } catch (err) {
     // Package not installed — degrade gracefully.
     console.warn('[ai] openai package not available:', err.message);
     _client = null;
   }
   return _client;
+}
+
+// ----------------------------------------------------------------
+// Robust JSON extraction. Not every provider/model honours
+// response_format strictly — some wrap JSON in ```json fences or add
+// prose. This pulls the JSON out regardless.
+// ----------------------------------------------------------------
+function extractJson(raw) {
+  if (!raw || typeof raw !== 'string') return {};
+  let s = raw.trim();
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) s = fence[1].trim();
+  try {
+    return JSON.parse(s);
+  } catch {
+    /* fall through */
+  }
+  const block = s.match(/\{[\s\S]*\}/);
+  if (block) {
+    try {
+      return JSON.parse(block[0]);
+    } catch {
+      /* give up */
+    }
+  }
+  return {};
+}
+
+// Request a JSON completion, falling back gracefully if the provider
+// rejects the response_format parameter (some OpenAI-compatible APIs do).
+async function createJsonCompletion(client, messages, maxTokens) {
+  const base = { model: MODEL, temperature: 0.4, max_tokens: maxTokens, messages };
+  try {
+    return await client.chat.completions.create({
+      ...base,
+      response_format: { type: 'json_object' },
+    });
+  } catch (err) {
+    const msg = err?.message || '';
+    const unsupported =
+      err?.status === 400 || /response_format|json|unsupported|not\s+support/i.test(msg);
+    if (unsupported) {
+      console.warn('[ai] provider rejected response_format; retrying without it.');
+      return client.chat.completions.create(base);
+    }
+    throw err;
+  }
 }
 
 // ----------------------------------------------------------------
@@ -210,25 +271,17 @@ Rules:
 Respond ONLY as JSON: {"insights":[{"icon","tone","title","message"}, ...]}`;
 
   try {
-    const completion = await client.chat.completions.create({
-      model: MODEL,
-      temperature: 0.4,
-      max_tokens: 600,
-      response_format: { type: 'json_object' },
-      messages: [
+    const completion = await createJsonCompletion(
+      client,
+      [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: JSON.stringify(context) },
       ],
-    });
+      600
+    );
 
-    const raw = completion.choices[0]?.message?.content || '{"insights":[]}';
-    let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      parsed = { insights: [] };
-    }
-
+    const raw = completion.choices[0]?.message?.content || '';
+    const parsed = extractJson(raw);
     const insights = Array.isArray(parsed.insights) ? parsed.insights.slice(0, 5) : [];
     return res.json({ success: true, configured: true, insights });
   } catch (err) {
