@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, lazy, Suspense, memo } from 'react';
+import { useEffect, useMemo, useState, useCallback, lazy, Suspense, memo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Wallet,
@@ -6,9 +6,13 @@ import {
   TrendingUp,
   CreditCard,
   Sparkles,
+  AlertTriangle,
+  RefreshCw,
+  PlusCircle,
 } from 'lucide-react';
-import { analyticsApi, expenseApi, budgetApi } from '../api/endpoints';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import { Link } from 'react-router-dom';
+import { analyticsApi } from '../api/endpoints';
+import { formatCurrency, formatDate, monthName } from '../utils/formatters';
 import { CATEGORY_COLORS } from '../utils/constants';
 import GlassCard from '../components/GlassCard';
 import SmartInsight from '../components/SmartInsight';
@@ -19,8 +23,7 @@ import AiInsights from '../components/AiInsights';
 import { useAuth } from '../context/AuthContext';
 
 // Recharts chunk is ~200 KB. Lazy-load the chart components so the
-// dashboard skeleton + stat cards render immediately, then charts pop
-// in once their JS arrives. The user perceives faster first paint.
+// dashboard skeleton + stat cards render immediately.
 const PieChartComponent = lazy(() => import('../components/PieChartComponent'));
 const LineChartComponent = lazy(() => import('../components/LineChartComponent'));
 
@@ -32,10 +35,6 @@ const ChartFallback = ({ height = 280 }) => (
   />
 );
 
-// ----------------------------------------------------------
-// StatCard — memoised so changing one card's value doesn't
-// re-render the other three.
-// ----------------------------------------------------------
 const StatCard = memo(function StatCard({
   icon: Icon,
   label,
@@ -74,8 +73,6 @@ const StatCard = memo(function StatCard({
   );
 });
 
-// Pre-defined ordering for budget status — captured outside the
-// component so the sort comparator is referentially stable.
 const STATUS_ORDER = ['exceeded', 'warning', 'safe'];
 
 export default function Dashboard() {
@@ -86,46 +83,52 @@ export default function Dashboard() {
   const [insights, setInsights] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [recent, setRecent] = useState([]);
+  const [period, setPeriod] = useState(null); // { month, year, isCurrentMonth }
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [d, c, l, i, b, e] = await Promise.all([
-          analyticsApi.dashboard(),
-          analyticsApi.categoryBreakdown(),
-          analyticsApi.dailyTrend(),
-          analyticsApi.insights(),
-          budgetApi.list(),
-          expenseApi.list({ limit: 5 }),
-        ]);
-        setStats(d.data.stats);
-        setPieData(c.data.data);
-        setLineData(l.data.data);
-        setInsights(i.data.insights);
-        setBudgets(b.data.budgets);
-        setRecent(e.data.expenses);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      // ONE request for the whole dashboard — the server resolves the
+      // active month (current, or the most recent month with data) and
+      // returns stats, charts, budgets, recent txns, and insights together.
+      const { data } = await analyticsApi.summary();
+      setStats(data.stats);
+      setPieData(data.categoryBreakdown || []);
+      setLineData(data.dailyTrend || []);
+      setInsights(data.insights || []);
+      setBudgets(data.budgets || []);
+      setRecent(data.recent || []);
+      setPeriod({
+        month: data.month,
+        year: data.year,
+        isCurrentMonth: data.isCurrentMonth,
+      });
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Memo so the budgets array is only re-sorted when budgets actually
-  // change (not on every render the dashboard does for unrelated state).
+  useEffect(() => {
+    load();
+  }, [load]);
+
   const sortedBudgets = useMemo(
     () =>
       budgets
         .slice()
         .sort(
-          (a, b) =>
-            STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)
+          (a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status)
         )
         .slice(0, 4),
     [budgets]
   );
 
+  // ---- Loading ----
   if (loading) {
     return (
       <div className="space-y-6">
@@ -138,11 +141,59 @@ export default function Dashboard() {
           <SkeletonChart />
           <SkeletonChart />
         </div>
+        <p className="text-center text-xs text-ink-400">
+          Loading your dashboard… the free-tier server may take up to ~30s to
+          wake on the first request.
+        </p>
+      </div>
+    );
+  }
+
+  // ---- Error ----
+  if (error) {
+    return (
+      <div className="grid min-h-[50vh] place-items-center">
+        <div className="max-w-sm text-center">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-coral-100 text-coral-600 dark:bg-coral-900/40 dark:text-coral-300">
+            <AlertTriangle size={28} />
+          </div>
+          <h3 className="mt-4 text-lg font-semibold">Couldn't load your data</h3>
+          <p className="mt-1 text-sm text-ink-500">
+            The server may still be waking up. Give it a moment and try again.
+          </p>
+          <button onClick={load} className="btn-primary mx-auto mt-4">
+            <RefreshCw size={16} /> Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Empty (account has no expenses at all) ----
+  const isEmpty = (stats?.transactionCount || 0) === 0 && recent.length === 0;
+  if (isEmpty) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
+          Hello {user?.name?.split(' ')[0]} 👋
+        </h2>
+        <GlassCard className="grid place-items-center !p-12 text-center">
+          <div className="mb-3 text-4xl">💸</div>
+          <h3 className="text-lg font-semibold">No transactions yet</h3>
+          <p className="mt-1 max-w-sm text-sm text-ink-500">
+            Add your first expense and your dashboard — stats, charts, budgets,
+            and AI insights — will come to life.
+          </p>
+          <Link to="/app/expenses" className="btn-primary mt-5">
+            <PlusCircle size={16} /> Add your first expense
+          </Link>
+        </GlassCard>
       </div>
     );
   }
 
   const positive = (stats?.netCashflow || 0) >= 0;
+  const showingPast = period && !period.isCurrentMonth;
 
   return (
     <div className="space-y-6">
@@ -150,19 +201,37 @@ export default function Dashboard() {
       <motion.div
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-baseline justify-between"
+        className="flex flex-wrap items-baseline justify-between gap-2"
       >
         <div>
           <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
             Hello {user?.name?.split(' ')[0]} 👋
           </h2>
           <p className="text-sm text-ink-500">
-            Here's your money snapshot for this month.
+            {showingPast
+              ? 'Here’s your most recent activity.'
+              : 'Here’s your money snapshot for this month.'}
           </p>
         </div>
+        {period && (
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-medium ${
+              showingPast
+                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                : 'bg-iris-50 text-iris-600 dark:bg-iris-950/40 dark:text-iris-300'
+            }`}
+            title={
+              showingPast
+                ? 'No activity in the current month yet — showing your latest active month.'
+                : undefined
+            }
+          >
+            {monthName(period.month)} {period.year}
+          </span>
+        )}
       </motion.div>
 
-      {/* Stat cards — each animates in with stagger, numbers count up */}
+      {/* Stat cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={CreditCard}
@@ -178,7 +247,7 @@ export default function Dashboard() {
           label="Total income"
           value={stats?.totalIncome || 0}
           formatter={formatCurrency}
-          sub="This month"
+          sub={showingPast ? `${monthName(period.month)}` : 'This month'}
           accent="#10B981"
           delay={0.1}
         />
@@ -205,8 +274,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Charts row — lazy-loaded so the rest of the dashboard renders
-          immediately. Skeleton placeholders hold the layout in place. */}
+      {/* Charts row */}
       <div className="grid gap-4 lg:grid-cols-3">
         <GlassCard className="lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">

@@ -7,17 +7,22 @@
  *   - REQUEST interceptor injects the JWT from localStorage so we never
  *     forget to send it on a protected route.
  *   - RESPONSE interceptor catches 401s and force-logs-out the user.
+ *
+ * Timeout: 60s. The backend runs on Render's free tier, which sleeps after
+ * ~15 min idle and takes 30–60s to cold-start. A short timeout would abort
+ * the very first request after a nap and surface as a blank/empty screen,
+ * so we give cold starts room to finish.
  */
 
 import axios from 'axios';
 
-// In dev: vite proxies /api to http://localhost:5000.
+// In dev: vite proxies /api to the local backend.
 // In production: set VITE_API_URL in .env to your deployed backend.
 const baseURL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL,
-  timeout: 15000,
+  timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
 });
 

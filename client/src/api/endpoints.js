@@ -31,6 +31,9 @@ export const budgetApi = {
 
 // ANALYTICS
 export const analyticsApi = {
+  // Combined single-call payload for the dashboard (stats + charts +
+  // budgets + recent + insights). Resolves the active month server-side.
+  summary: (params) => api.get('/analytics/summary', { params }),
   dashboard: (params) => api.get('/analytics/dashboard', { params }),
   categoryBreakdown: (params) => api.get('/analytics/category-breakdown', { params }),
   dailyTrend: (params) => api.get('/analytics/daily-trend', { params }),
@@ -63,7 +66,7 @@ export const recurringApi = {
   remove: (id) => api.delete(`/recurring/${id}`),
 };
 
-// AI — OpenAI-powered insights + chat (degrades gracefully if the server
+// AI — OpenAI-compatible insights + chat (degrades gracefully if the server
 // has no OPENAI_API_KEY; check `configured` on the response).
 export const aiApi = {
   status: () => api.get('/ai/status'),
@@ -74,13 +77,9 @@ export const aiApi = {
 /**
  * EXPORT
  * ------------------------------------------------------------
- * IMPORTANT: We cannot use a plain <a href="/api/export/..."> because
- * those native browser requests skip our Axios interceptor, which means
- * the JWT is never attached → the server returns 401.
- *
- * Instead we fetch the file as a blob (Axios attaches the token), turn it
- * into an object URL, and trigger a programmatic download. Same UX —
- * properly authenticated.
+ * We fetch the file as a blob (Axios attaches the JWT), turn it into an
+ * object URL, and trigger a programmatic download — a plain <a href> would
+ * skip the interceptor and 401.
  */
 const triggerDownload = (blob, filename) => {
   const url = URL.createObjectURL(blob);

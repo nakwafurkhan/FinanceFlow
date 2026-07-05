@@ -13,7 +13,7 @@ export default defineConfig({
         name: 'FinanceFlow',
         short_name: 'FinanceFlow',
         description:
-          'Personal finance dashboard with budgets, analytics, and smart insights',
+          'Personal finance dashboard with budgets, analytics, and AI insights',
         theme_color: '#6366f1',
         background_color: '#0f172a',
         display: 'standalone',
@@ -22,16 +22,8 @@ export default defineConfig({
         start_url: '/',
         categories: ['finance', 'productivity'],
         icons: [
-          {
-            src: '/pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-          },
-          {
-            src: '/pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-          },
+          { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
           {
             src: '/pwa-512x512-maskable.png',
             sizes: '512x512',
@@ -41,11 +33,25 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Cache strategy tuned in Phase 8 for performance.
-        // - Static assets: cache-first (immutable hashed filenames)
-        // - API calls: network-first with short timeout so users see fresh data
-        //   online but fall back to cache when offline.
+        // Precache the built static assets (hashed filenames = safe to cache).
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+
+        // Take control of open pages as soon as a new SW is deployed, and
+        // drop stale precaches. Critical: this forces returning visitors off
+        // the OLD service worker (which cached empty API responses) without
+        // them having to manually clear site data.
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+
+        // IMPORTANT: we deliberately do NOT cache /api/* responses.
+        //
+        // The previous config used NetworkFirst with a 5s timeout. Because the
+        // Render free tier cold-starts in 30–60s, that 5s timeout tripped on
+        // every cold load and the SW served a STALE cached response — which,
+        // for a freshly-seeded/empty account, meant the dashboard showed ₹0
+        // even though the API had data. Financial data must always be live,
+        // so API calls now go straight to the network (no SW caching).
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
@@ -53,15 +59,6 @@ export default defineConfig({
             options: {
               cacheName: 'gstatic-fonts',
               expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/financeflow-6xau\.onrender\.com\/api\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'finance-api',
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 5 },
             },
           },
         ],
@@ -90,7 +87,6 @@ export default defineConfig({
         },
       },
     },
-    // Slightly higher warning threshold — Recharts is large but legitimate.
     chunkSizeWarningLimit: 900,
   },
 });
