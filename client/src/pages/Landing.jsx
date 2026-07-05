@@ -38,6 +38,7 @@ import {
   Cpu,
 } from 'lucide-react';
 import Logo from '../components/Logo';
+import AmbientOrbs from '../components/AmbientOrbs';
 
 /* ----------------------------------------------------------------
    Small motion helpers (framer-motion — already a project dependency)
@@ -96,63 +97,6 @@ function Counter({ to, decimals = 0, prefix = '', suffix = '', className = '' })
       {shown}
       {suffix}
     </span>
-  );
-}
-
-/* ----------------------------------------------------------------
-   Ambient background orbs — blurred brand-token gradients.
-   (Radial orbs aren't expressible as a Tailwind utility, so the brand
-   token hexes are used inline purely for the blur effect.)
-   ---------------------------------------------------------------- */
-function Orbs() {
-  const reduce = useReducedMotion();
-  const base = 'pointer-events-none absolute rounded-full blur-[80px]';
-  const drift = (i) =>
-    reduce
-      ? {}
-      : {
-          animate: { x: [0, i * 30, 0], y: [0, i * -24, 0], scale: [1, 1.1, 1] },
-          transition: { duration: 18 + i * 4, repeat: Infinity, ease: 'easeInOut' },
-        };
-  return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      <motion.div
-        className={base}
-        style={{
-          width: 520,
-          height: 520,
-          top: -160,
-          right: -120,
-          opacity: 0.5,
-          background: 'radial-gradient(circle, #10b981, transparent 70%)',
-        }}
-        {...drift(-1)}
-      />
-      <motion.div
-        className={base}
-        style={{
-          width: 480,
-          height: 480,
-          bottom: -180,
-          left: -140,
-          opacity: 0.45,
-          background: 'radial-gradient(circle, #f43f5e, transparent 70%)',
-        }}
-        {...drift(1)}
-      />
-      <motion.div
-        className={base}
-        style={{
-          width: 380,
-          height: 380,
-          top: '40%',
-          left: '30%',
-          opacity: 0.3,
-          background: 'radial-gradient(circle, #6366f1, transparent 70%)',
-        }}
-        {...drift(1.6)}
-      />
-    </div>
   );
 }
 
@@ -386,7 +330,7 @@ export default function Landing() {
 
   return (
     <div className="relative overflow-x-hidden">
-      <Orbs />
+      <AmbientOrbs intense />
 
       {/* NAV */}
       <header className="fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-8 md:pt-5">

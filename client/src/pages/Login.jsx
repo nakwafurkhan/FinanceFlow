@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import AmbientOrbs from '../components/AmbientOrbs';
 
 export default function Login() {
   const { login } = useAuth();
@@ -26,18 +27,23 @@ export default function Login() {
   };
 
   return (
-    <div className="grid min-h-screen place-items-center px-4">
+    <div className="relative grid min-h-screen place-items-center px-4">
+      <AmbientOrbs />
+
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className="w-full max-w-md glass-card p-8 md:p-10"
+        className="glass-card relative z-10 w-full max-w-md p-8 md:p-10"
       >
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-4 grid h-14 w-14 place-items-center rounded-3xl bg-gradient-brand text-white shadow-glow">
             <span className="text-2xl font-bold">F</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome{' '}
+            <span className="font-serif font-normal italic text-ink-400">back.</span>
+          </h1>
           <p className="mt-1 text-sm text-ink-500">
             Sign in to FinanceFlow to continue
           </p>
@@ -66,11 +72,7 @@ export default function Login() {
               className="input"
             />
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary w-full"
-          >
+          <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
@@ -91,7 +93,7 @@ export default function Login() {
         href="https://github.com/nakwafurkhan"
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-4 left-1/2 -translate-x-1/2 text-xs text-ink-400 hover:text-iris-600 dark:hover:text-iris-300 transition"
+        className="fixed bottom-4 left-1/2 z-10 -translate-x-1/2 text-xs text-ink-400 transition hover:text-iris-600 dark:hover:text-iris-300"
       >
         Built by @nakwafurkhan
       </a>
