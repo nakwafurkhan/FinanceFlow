@@ -1,692 +1,816 @@
 /**
  * pages/Landing.jsx
  * --------------------------------------------------------------
- * The public homepage at /. Built for first impressions:
+ * The public homepage at "/". Rebuilt from the "Lumen" editorial sketch,
+ * mapped onto FinanceFlow's own stack:
+ *   - React + Framer Motion (reveal-on-scroll, count-ups, path draws) instead
+ *     of the sketch's raw IntersectionObserver + CSS keyframes.
+ *   - Our Tailwind design tokens (iris / violet / mint / coral / amber / ink)
+ *     and utility classes (glass-card, btn-primary, btn-ghost) — no hardcoded
+ *     one-off palettes.
+ *   - Our <Logo/> component + lucide-react icons.
+ *   - Real product content (₹ currency, live demo creds, the AI feature).
  *
- *   - Sticky glass nav with logo + sign-in CTA
- *   - Hero with animated gradient-mesh background + dual CTA
- *   - Demo-credentials callout (one-click try-the-app)
- *   - Features grid (8 cards, hover-lift)
- *   - Visual showcase (dashboard / analytics / mobile)
- *   - Tech stack strip
- *   - AI Coming Soon teaser (sparkle animation)
- *   - Footer
+ * The one added global token is the "Instrument Serif" accent font (added to
+ * index.html + tailwind fontFamily.serif) — the project had no serif face and
+ * the italic-serif accent is central to this design's hierarchy.
  *
- * All scroll-triggered animations use Framer Motion's `whileInView`
- * with `viewport={{ once: true, margin: '-100px' }}` so motion fires
- * once just before the section enters view.
+ * Fully responsive, dark-mode aware, and reduced-motion safe.
  */
 
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
 import {
-  Wallet,
-  PieChart,
-  LineChart,
-  Target,
-  Repeat,
-  Download,
-  Moon,
-  ShieldCheck,
-  Sparkles,
   ArrowRight,
-  Github,
-  Copy,
+  Play,
+  Check,
+  TrendingUp,
+  PieChart,
+  ShieldCheck,
   Smartphone,
-  Zap,
-  Lock,
+  Sparkles,
+  Github,
+  ShoppingBag,
+  Database,
+  Server,
+  Code2,
+  Cpu,
 } from 'lucide-react';
 import Logo from '../components/Logo';
 
-// ----------------------------------------------------------
-// Motion presets
-// ----------------------------------------------------------
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0 },
-};
+/* ----------------------------------------------------------------
+   Small motion helpers (framer-motion — already a project dependency)
+   ---------------------------------------------------------------- */
 
-const stagger = {
-  visible: {
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-  },
-};
+const EASE = [0.16, 1, 0.3, 1];
 
-// ----------------------------------------------------------
-// Features list (matches README + signed-in app capabilities)
-// ----------------------------------------------------------
-const features = [
-  {
-    icon: Wallet,
-    title: 'Expense management',
-    desc: 'Full CRUD with category, date, payment method. Filters, search, server-side pagination.',
-    accent: 'iris',
-  },
-  {
-    icon: Target,
-    title: 'Monthly budgets',
-    desc: 'Set a target per category. Track spent vs remaining with safe / warning / exceeded states.',
-    accent: 'mint',
-  },
-  {
-    icon: PieChart,
-    title: 'Smart analytics',
-    desc: 'Three chart types powered by MongoDB aggregation pipelines — pie, bar, and area.',
-    accent: 'violet',
-  },
-  {
-    icon: LineChart,
-    title: 'Income tracking',
-    desc: 'Log salary, freelance, refunds. See net cashflow at a glance on your dashboard.',
-    accent: 'mint',
-  },
-  {
-    icon: Target,
-    title: 'Savings goals',
-    desc: 'Visual progress bars and contribution tracking for the things you are saving toward.',
-    accent: 'iris',
-  },
-  {
-    icon: Repeat,
-    title: 'Recurring expenses',
-    desc: 'Netflix, rent, subscriptions. Set it once, see it every month.',
-    accent: 'amber',
-  },
-  {
-    icon: Download,
-    title: 'CSV + PDF export',
-    desc: 'Take your data with you. Polished PDF reports for tax season or budget reviews.',
-    accent: 'violet',
-  },
-  {
-    icon: Moon,
-    title: 'Dark mode + PWA',
-    desc: 'System-aware dark mode. Installable on iOS, Android, macOS, and Windows.',
-    accent: 'iris',
-  },
-];
-
-// ----------------------------------------------------------
-// Tech stack pills
-// ----------------------------------------------------------
-const techStack = [
-  'React 18',
-  'Vite 5',
-  'Tailwind CSS',
-  'Framer Motion',
-  'Recharts',
-  'Node.js',
-  'Express',
-  'MongoDB Atlas',
-  'Mongoose',
-  'JWT',
-  'bcrypt',
-  'PWA',
-];
-
-// ----------------------------------------------------------
-// Page
-// ----------------------------------------------------------
-export default function Landing() {
+function Reveal({ children, delay = 0, className = '', y = 28 }) {
   return (
-    <div className="min-h-screen bg-white dark:bg-ink-950 text-ink-900 dark:text-ink-50 overflow-x-hidden">
-      {/* ============================================================
-          NAV
-         ============================================================ */}
-      <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/70 dark:bg-ink-950/70 border-b border-ink-100 dark:border-ink-800/60">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Logo withName size={32} />
-          <div className="flex items-center gap-3">
-            <Link
-              to="/login"
-              className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-ink-700 dark:text-ink-200 hover:text-iris-600 dark:hover:text-iris-300 transition"
-            >
-              Sign in
-            </Link>
-            <Link
-              to="/register"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-full bg-gradient-brand text-white shadow-glow hover:shadow-glow-lg transition-shadow"
-            >
-              Get started
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, y }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.9, ease: EASE, delay }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
-      {/* ============================================================
-          HERO
-         ============================================================ */}
-      <section className="relative overflow-hidden">
-        {/* Animated gradient mesh */}
-        <div
-          className="absolute inset-0 bg-gradient-mesh animate-gradient-shift"
-          style={{ backgroundSize: '200% 200%' }}
-          aria-hidden="true"
-        />
+// Count-up number that fires when scrolled into view; respects reduced motion.
+function Counter({ to, decimals = 0, prefix = '', suffix = '', className = '' }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-40px' });
+  const reduce = useReducedMotion();
+  const [val, setVal] = useState(0);
 
-        <div className="relative max-w-7xl mx-auto px-6 lg:px-8 py-24 lg:py-32">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={stagger}
-            className="text-center max-w-4xl mx-auto"
-          >
-            {/* Badge */}
-            <motion.div variants={fadeUp}>
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-brand-soft border border-iris-200 dark:border-iris-800/50 text-iris-700 dark:text-iris-300 text-sm font-medium">
-                <Sparkles className="w-3.5 h-3.5" />
-                AI-powered insights coming soon
-              </span>
-            </motion.div>
+  useEffect(() => {
+    if (!inView) return undefined;
+    if (reduce) {
+      setVal(to);
+      return undefined;
+    }
+    let raf;
+    const dur = 1600;
+    const start = performance.now();
+    const tick = (now) => {
+      const p = Math.min((now - start) / dur, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setVal(to * eased);
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else setVal(to);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, reduce, to]);
 
-            {/* Headline */}
-            <motion.h1
-              variants={fadeUp}
-              className="mt-6 text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight"
-            >
-              Personal finance,
-              <br />
-              <span className="bg-gradient-brand bg-clip-text text-transparent">
-                made beautiful.
-              </span>
-            </motion.h1>
+  const shown = decimals
+    ? val.toFixed(decimals)
+    : Math.round(val).toLocaleString('en-IN');
 
-            {/* Subhead */}
-            <motion.p
-              variants={fadeUp}
-              className="mt-6 text-lg sm:text-xl text-ink-600 dark:text-ink-300 max-w-2xl mx-auto leading-relaxed"
-            >
-              Track expenses, set monthly budgets, and visualise your money with
-              an Apple-inspired dashboard. Built end-to-end on the MERN stack
-              and installable as a PWA.
-            </motion.p>
+  return (
+    <span ref={ref} className={className} style={{ fontVariantNumeric: 'tabular-nums' }}>
+      {prefix}
+      {shown}
+      {suffix}
+    </span>
+  );
+}
 
-            {/* CTAs */}
-            <motion.div
-              variants={fadeUp}
-              className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3"
-            >
-              <Link
-                to="/login"
-                className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-gradient-brand text-white font-semibold shadow-glow hover:shadow-glow-lg hover:scale-[1.02] active:scale-[0.98] transition-all"
-              >
-                Try the live demo
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-              <Link
-                to="/register"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white/80 dark:bg-ink-900/80 backdrop-blur border border-ink-200 dark:border-ink-700 text-ink-900 dark:text-ink-50 font-semibold hover:bg-white dark:hover:bg-ink-800 transition"
-              >
-                Create free account
-              </Link>
-            </motion.div>
-
-            {/* Trust line */}
-            <motion.p
-              variants={fadeUp}
-              className="mt-6 text-sm text-ink-500 dark:text-ink-400"
-            >
-              No credit card. Demo data preloaded. Works offline.
-            </motion.p>
-          </motion.div>
-
-          {/* Hero showcase — gradient-bordered card */}
-          <motion.div
-            initial={{ opacity: 0, y: 60 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-16 lg:mt-20 relative max-w-5xl mx-auto"
-          >
-            <div className="relative rounded-3xl bg-gradient-brand p-[1.5px] shadow-glow-lg">
-              <div className="rounded-3xl bg-white dark:bg-ink-900 overflow-hidden">
-                {/* Replace with a real dashboard screenshot when available */}
-                <div className="aspect-[16/9] bg-gradient-to-br from-ink-50 via-white to-iris-50/30 dark:from-ink-900 dark:via-ink-900 dark:to-iris-950/30 flex items-center justify-center">
-                  <div className="text-center px-8">
-                    <Logo size={56} />
-                    <p className="mt-4 text-ink-500 dark:text-ink-400 text-sm">
-                      Your dashboard screenshot will appear here
-                    </p>
-                    <p className="text-ink-400 dark:text-ink-500 text-xs mt-1">
-                      Drop it at client/public/screenshots/dashboard.png
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* Decorative glow blobs */}
-            <div className="absolute -top-8 -left-8 w-32 h-32 rounded-full bg-iris-400/30 blur-3xl -z-10" />
-            <div className="absolute -bottom-8 -right-8 w-40 h-40 rounded-full bg-violet-400/30 blur-3xl -z-10" />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ============================================================
-          DEMO CREDENTIALS CALLOUT
-         ============================================================ */}
-      <section className="py-12 px-6 lg:px-8">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
-          variants={fadeUp}
-          className="max-w-3xl mx-auto"
-        >
-          <div className="relative rounded-2xl bg-gradient-to-br from-iris-50 via-white to-violet-50 dark:from-iris-950/40 dark:via-ink-900 dark:to-violet-950/40 p-6 lg:p-8 border border-iris-200/60 dark:border-iris-800/40 shadow-soft">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-brand flex items-center justify-center shadow-glow">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold">Try it instantly — no signup needed</h3>
-                <p className="mt-1 text-sm text-ink-600 dark:text-ink-300">
-                  The seeded demo account has a full month of sample expenses, budgets, and income loaded.
-                </p>
-                <div className="mt-4 grid sm:grid-cols-2 gap-3">
-                  <CredentialRow label="Email" value="demo@financeflow.app" />
-                  <CredentialRow label="Password" value="demo1234" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ============================================================
-          FEATURES GRID
-         ============================================================ */}
-      <section className="py-20 lg:py-28 px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="text-center max-w-2xl mx-auto"
-          >
-            <motion.span
-              variants={fadeUp}
-              className="inline-block text-iris-600 dark:text-iris-400 text-sm font-semibold uppercase tracking-wider"
-            >
-              Everything you need
-            </motion.span>
-            <motion.h2
-              variants={fadeUp}
-              className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight"
-            >
-              Built for the way you actually <span className="bg-gradient-brand bg-clip-text text-transparent">spend</span>.
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              className="mt-4 text-ink-600 dark:text-ink-300"
-            >
-              Eight focused features. No bloat, no upsells.
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-50px' }}
-            variants={stagger}
-            className="mt-16 grid sm:grid-cols-2 lg:grid-cols-4 gap-5"
-          >
-            {features.map((f) => (
-              <motion.div
-                key={f.title}
-                variants={fadeUp}
-                whileHover={{ y: -4 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                className="group p-6 rounded-2xl bg-white dark:bg-ink-900 border border-ink-100 dark:border-ink-800 hover:border-iris-200 dark:hover:border-iris-800 hover:shadow-glow transition-all"
-              >
-                <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${accentClass(f.accent)}`}
-                >
-                  <f.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="font-semibold text-lg">{f.title}</h3>
-                <p className="mt-2 text-sm text-ink-600 dark:text-ink-400 leading-relaxed">
-                  {f.desc}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ============================================================
-          VISUAL SHOWCASE
-         ============================================================ */}
-      <section className="py-20 lg:py-28 px-6 lg:px-8 bg-gradient-to-b from-white via-iris-50/30 to-white dark:from-ink-950 dark:via-iris-950/20 dark:to-ink-950">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="text-center max-w-2xl mx-auto"
-          >
-            <motion.h2
-              variants={fadeUp}
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight"
-            >
-              Beautiful on every screen.
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              className="mt-4 text-ink-600 dark:text-ink-300"
-            >
-              Pixel-perfect light and dark themes. Installable as a PWA.
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-50px' }}
-            variants={stagger}
-            className="mt-16 grid md:grid-cols-3 gap-6"
-          >
-            {[
-              { title: 'Dashboard', icon: LineChart, path: '/screenshots/dashboard.png' },
-              { title: 'Analytics', icon: PieChart, path: '/screenshots/analytics.png' },
-              { title: 'Mobile / PWA', icon: Smartphone, path: '/screenshots/mobile.png' },
-            ].map((s) => (
-              <motion.div
-                key={s.title}
-                variants={fadeUp}
-                whileHover={{ y: -6 }}
-                className="rounded-2xl bg-white dark:bg-ink-900 p-1 shadow-soft hover:shadow-glow transition-shadow"
-              >
-                <div className="aspect-[4/3] rounded-xl bg-gradient-to-br from-ink-50 to-iris-50/40 dark:from-ink-800 dark:to-iris-950/40 flex items-center justify-center">
-                  <s.icon className="w-12 h-12 text-iris-500/60" />
-                </div>
-                <p className="text-center py-3 font-medium">{s.title}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ============================================================
-          AI COMING SOON
-         ============================================================ */}
-      <section className="py-20 lg:py-28 px-6 lg:px-8">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
-          variants={stagger}
-          className="max-w-4xl mx-auto"
-        >
-          <div className="relative rounded-3xl bg-gradient-brand p-8 lg:p-12 overflow-hidden shadow-glow-lg">
-            {/* Floating sparkles */}
-            <Sparkles className="absolute top-8 right-8 w-6 h-6 text-white/40 animate-sparkle" />
-            <Sparkles
-              className="absolute bottom-12 left-12 w-4 h-4 text-white/40 animate-sparkle"
-              style={{ animationDelay: '0.5s' }}
-            />
-            <Sparkles
-              className="absolute top-1/2 right-1/3 w-5 h-5 text-white/40 animate-sparkle"
-              style={{ animationDelay: '1s' }}
-            />
-
-            <motion.div variants={fadeUp} className="relative text-white">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur text-white text-xs font-semibold uppercase tracking-wider">
-                <Sparkles className="w-3 h-3" />
-                Coming soon
-              </span>
-              <h2 className="mt-4 text-3xl lg:text-5xl font-bold tracking-tight">
-                AI that understands your money.
-              </h2>
-              <p className="mt-4 text-white/90 text-lg max-w-2xl">
-                A conversational assistant powered by OpenAI that explains your
-                spending patterns, flags unusual transactions, and answers
-                questions like &ldquo;how much do I usually spend on coffee in
-                December?&rdquo;
-              </p>
-              <p className="mt-2 text-white/70 text-sm">
-                Already on the roadmap. Want early access? Sign up — we&apos;ll let
-                you know.
-              </p>
-            </motion.div>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ============================================================
-          TECH STACK
-         ============================================================ */}
-      <section className="py-20 lg:py-24 px-6 lg:px-8">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
-          variants={stagger}
-          className="max-w-5xl mx-auto text-center"
-        >
-          <motion.h2 variants={fadeUp} className="text-2xl lg:text-3xl font-bold tracking-tight">
-            Built with technology you trust.
-          </motion.h2>
-          <motion.p variants={fadeUp} className="mt-3 text-ink-600 dark:text-ink-300">
-            Modern, battle-tested, and open-source.
-          </motion.p>
-          <motion.div
-            variants={fadeUp}
-            className="mt-8 flex flex-wrap justify-center gap-2.5"
-          >
-            {techStack.map((t) => (
-              <span
-                key={t}
-                className="px-4 py-2 rounded-full bg-ink-50 dark:bg-ink-900 border border-ink-100 dark:border-ink-800 text-sm font-medium text-ink-700 dark:text-ink-300"
-              >
-                {t}
-              </span>
-            ))}
-          </motion.div>
-        </motion.div>
-      </section>
-
-      {/* ============================================================
-          FINAL CTA
-         ============================================================ */}
-      <section className="py-20 lg:py-32 px-6 lg:px-8">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
-          variants={stagger}
-          className="max-w-3xl mx-auto text-center"
-        >
-          <motion.div variants={fadeUp}>
-            <Logo size={56} />
-          </motion.div>
-          <motion.h2
-            variants={fadeUp}
-            className="mt-6 text-3xl lg:text-5xl font-bold tracking-tight"
-          >
-            Take control of your money today.
-          </motion.h2>
-          <motion.p variants={fadeUp} className="mt-4 text-ink-600 dark:text-ink-300">
-            Free forever. Open-source. No tracking, no ads.
-          </motion.p>
-          <motion.div
-            variants={fadeUp}
-            className="mt-8 flex flex-col sm:flex-row justify-center gap-3"
-          >
-            <Link
-              to="/login"
-              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-gradient-brand text-white font-semibold shadow-glow hover:shadow-glow-lg hover:scale-[1.02] transition-all"
-            >
-              Try live demo
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <a
-              href="https://github.com/nakwafurkhan/FinanceFlow"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-ink-900 dark:bg-white text-white dark:text-ink-900 font-semibold hover:opacity-90 transition"
-            >
-              <Github className="w-4 h-4" />
-              Star on GitHub
-            </a>
-          </motion.div>
-        </motion.div>
-      </section>
-
-      {/* ============================================================
-          MADE BY — author credit section
-         ============================================================ */}
-      <section className="py-16 lg:py-20 px-6 lg:px-8 bg-gradient-to-b from-white to-ink-50/50 dark:from-ink-950 dark:to-ink-900/50">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
-          variants={stagger}
-          className="max-w-2xl mx-auto text-center"
-        >
-          <motion.span
-            variants={fadeUp}
-            className="inline-block text-iris-600 dark:text-iris-400 text-sm font-semibold uppercase tracking-wider"
-          >
-            Made by
-          </motion.span>
-          <motion.a
-            variants={fadeUp}
-            href="https://github.com/nakwafurkhan"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 group inline-flex items-center gap-4 px-4 py-3 rounded-2xl hover:bg-white dark:hover:bg-ink-900 transition-colors"
-          >
-            <img
-              src="https://avatars.githubusercontent.com/nakwafurkhan"
-              alt="Nakwa Furkhan"
-              loading="lazy"
-              className="w-14 h-14 rounded-full ring-2 ring-iris-200 dark:ring-iris-800/60 shadow-soft group-hover:ring-iris-400 transition"
-              onError={(e) => {
-                // Fall back to a gradient circle if GitHub avatar fails
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-            <div className="text-left">
-              <div className="text-xl font-bold tracking-tight group-hover:text-iris-600 dark:group-hover:text-iris-300 transition-colors">
-                Nakwa Furkhan
-              </div>
-              <div className="text-sm text-ink-500 dark:text-ink-400 flex items-center gap-1.5">
-                <Github className="w-3.5 h-3.5" />
-                @nakwafurkhan
-              </div>
-            </div>
-          </motion.a>
-          <motion.p
-            variants={fadeUp}
-            className="mt-6 text-ink-600 dark:text-ink-300 text-sm leading-relaxed"
-          >
-            FinanceFlow is a final-year MERN portfolio project — designed,
-            engineered, and shipped end-to-end. If you like what you see, give
-            the repo a star, share it with a friend who builds, or just say hi.
-          </motion.p>
-          <motion.div
-            variants={fadeUp}
-            className="mt-6 flex flex-wrap justify-center gap-3"
-          >
-            <a
-              href="https://github.com/nakwafurkhan"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-ink-900 dark:bg-white text-white dark:text-ink-900 text-sm font-semibold hover:opacity-90 transition"
-            >
-              <Github className="w-4 h-4" />
-              Follow on GitHub
-            </a>
-            <a
-              href="https://github.com/nakwafurkhan/FinanceFlow"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-brand text-white text-sm font-semibold shadow-glow hover:shadow-glow-lg transition-shadow"
-            >
-              <Sparkles className="w-4 h-4" />
-              Star FinanceFlow
-            </a>
-          </motion.div>
-        </motion.div>
-      </section>
-
-      {/* ============================================================
-          FOOTER
-         ============================================================ */}
-      <footer className="border-t border-ink-100 dark:border-ink-800 py-10 px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <Logo withName size={28} />
-          <div className="flex items-center gap-6 text-sm text-ink-500 dark:text-ink-400">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4" />
-              MIT licensed
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Lock className="w-4 h-4" />
-              JWT + bcrypt
-            </span>
-            <a
-              href="https://github.com/nakwafurkhan/FinanceFlow"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 hover:text-iris-600 dark:hover:text-iris-300 transition"
-            >
-              <Github className="w-4 h-4" />
-              Source
-            </a>
-          </div>
-        </div>
-        <p className="mt-6 text-center text-xs text-ink-400 dark:text-ink-500">
-          © {new Date().getFullYear()} FinanceFlow · Designed and built by{' '}
-          <a
-            href="https://github.com/nakwafurkhan"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-iris-600 dark:text-iris-400 hover:underline underline-offset-2"
-          >
-            Nakwa Furkhan
-          </a>
-        </p>
-      </footer>
+/* ----------------------------------------------------------------
+   Ambient background orbs — blurred brand-token gradients.
+   (Radial orbs aren't expressible as a Tailwind utility, so the brand
+   token hexes are used inline purely for the blur effect.)
+   ---------------------------------------------------------------- */
+function Orbs() {
+  const reduce = useReducedMotion();
+  const base = 'pointer-events-none absolute rounded-full blur-[80px]';
+  const drift = (i) =>
+    reduce
+      ? {}
+      : {
+          animate: { x: [0, i * 30, 0], y: [0, i * -24, 0], scale: [1, 1.1, 1] },
+          transition: { duration: 18 + i * 4, repeat: Infinity, ease: 'easeInOut' },
+        };
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+      <motion.div
+        className={base}
+        style={{
+          width: 520,
+          height: 520,
+          top: -160,
+          right: -120,
+          opacity: 0.5,
+          background: 'radial-gradient(circle, #10b981, transparent 70%)',
+        }}
+        {...drift(-1)}
+      />
+      <motion.div
+        className={base}
+        style={{
+          width: 480,
+          height: 480,
+          bottom: -180,
+          left: -140,
+          opacity: 0.45,
+          background: 'radial-gradient(circle, #f43f5e, transparent 70%)',
+        }}
+        {...drift(1)}
+      />
+      <motion.div
+        className={base}
+        style={{
+          width: 380,
+          height: 380,
+          top: '40%',
+          left: '30%',
+          opacity: 0.3,
+          background: 'radial-gradient(circle, #6366f1, transparent 70%)',
+        }}
+        {...drift(1.6)}
+      />
     </div>
   );
 }
 
-// ----------------------------------------------------------
-// Helpers
-// ----------------------------------------------------------
-function accentClass(accent) {
-  const map = {
-    iris: 'bg-gradient-brand shadow-glow',
-    mint: 'bg-gradient-mint shadow-glow-mint',
-    violet: 'bg-gradient-to-br from-violet-500 to-violet-700 shadow-glow-violet',
-    amber: 'bg-gradient-to-br from-amber-400 to-amber-600 shadow-soft',
-  };
-  return map[accent] || map.iris;
+/* ----------------------------------------------------------------
+   Hero dashboard mockup (glass panel)
+   ---------------------------------------------------------------- */
+const BAR_HEIGHTS = [40, 65, 50, 85, 72, 90, 58];
+
+function HeroMockup() {
+  const reduce = useReducedMotion();
+  return (
+    <div className="relative">
+      {/* spinning ring caption */}
+      {!reduce && (
+        <motion.div
+          className="absolute -right-4 -top-8 hidden h-20 w-20 opacity-70 sm:block"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
+        >
+          <svg viewBox="0 0 100 100" className="h-full w-full">
+            <defs>
+              <path
+                id="ff-ring"
+                d="M 50,50 m -38,0 a 38,38 0 1,1 76,0 a 38,38 0 1,1 -76,0"
+              />
+            </defs>
+            <text
+              fontSize="9"
+              className="fill-ink-500 dark:fill-ink-400"
+              letterSpacing="2.5"
+            >
+              <textPath href="#ff-ring">
+                MERN · PWA · AI · MERN · PWA · AI ·
+              </textPath>
+            </text>
+          </svg>
+        </motion.div>
+      )}
+
+      <motion.div
+        className="glass-card p-5"
+        initial={{ opacity: 0, y: 40, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 1.1, ease: EASE, delay: 0.2 }}
+      >
+        {/* top bar */}
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <div className="text-xs text-ink-500">This month · balance</div>
+            <div className="text-2xl font-semibold tracking-tight">
+              ₹<Counter to={34764} />
+            </div>
+          </div>
+          <div className="flex gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-coral-500" />
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+            <span className="h-2.5 w-2.5 rounded-full bg-mint-500" />
+          </div>
+        </div>
+
+        {/* bar chart */}
+        <div className="mb-3 rounded-2xl border border-ink-200/50 bg-white/70 p-4 dark:border-white/5 dark:bg-ink-900/40">
+          <div className="flex h-32 items-end justify-between gap-1.5">
+            {BAR_HEIGHTS.map((h, i) => (
+              <motion.div
+                key={i}
+                className={`w-full rounded-t ${
+                  i === 3
+                    ? 'bg-gradient-to-t from-mint-600 to-mint-300'
+                    : 'bg-gradient-to-t from-iris-600 to-iris-400'
+                }`}
+                style={{ transformOrigin: 'bottom' }}
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1, height: `${h}%` }}
+                transition={{ duration: 1, ease: EASE, delay: 0.3 + i * 0.05 }}
+              />
+            ))}
+          </div>
+          <div className="mt-2 flex justify-between text-[10px] font-medium text-ink-400">
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+              <span key={i}>{d}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* budget ring + categories */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-ink-200/50 bg-white/70 p-4 dark:border-white/5 dark:bg-ink-900/40">
+            <div className="relative">
+              <svg width="84" height="84" viewBox="0 0 100 100" className="-rotate-90">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="none"
+                  className="stroke-ink-200 dark:stroke-ink-700"
+                  strokeWidth="8"
+                />
+                <motion.circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="none"
+                  className="stroke-iris-500"
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  strokeDasharray={251.2}
+                  initial={{ strokeDashoffset: 251.2 }}
+                  whileInView={{ strokeDashoffset: 62.8 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 1.6, ease: EASE, delay: 0.5 }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="text-lg font-semibold">75%</div>
+                <div className="text-[10px] text-ink-500">of ₹8,000</div>
+              </div>
+            </div>
+            <div className="mt-2 text-[10px] text-ink-500">Food budget</div>
+          </div>
+
+          <div className="space-y-2.5 rounded-2xl border border-ink-200/50 bg-white/70 p-4 dark:border-white/5 dark:bg-ink-900/40">
+            <div className="label mb-1">Top categories</div>
+            {[
+              ['Bills', 'bg-iris-500', '10,359'],
+              ['Travel', 'bg-violet-500', '5,222'],
+              ['Shopping', 'bg-amber-500', '2,992'],
+              ['Food', 'bg-mint-500', '707'],
+            ].map(([name, dot, amt]) => (
+              <div key={name} className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${dot}`} />
+                  {name}
+                </div>
+                <span className="font-medium" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  ₹{amt}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* transaction row */}
+        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-ink-200/50 bg-white/70 p-3 dark:border-white/5 dark:bg-ink-900/40">
+          <div className="grid h-9 w-9 place-items-center rounded-full bg-coral-500/15 text-coral-500">
+            <ShoppingBag size={16} />
+          </div>
+          <div className="flex-1">
+            <div className="text-xs font-medium">Groceries</div>
+            <div className="text-[10px] text-ink-500">Today · 2:14 PM</div>
+          </div>
+          <div className="text-sm font-semibold text-coral-500">−₹4,500</div>
+        </div>
+      </motion.div>
+
+      {/* floating chip */}
+      <motion.div
+        className="glass-card absolute -left-6 bottom-16 hidden items-center gap-3 !rounded-2xl px-4 py-3 sm:flex"
+        animate={reduce ? {} : { y: [0, -10, 0] }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        <div className="grid h-8 w-8 place-items-center rounded-full bg-mint-500/20 text-mint-600">
+          <Check size={14} strokeWidth={2.5} />
+        </div>
+        <div>
+          <div className="text-[10px] text-ink-500">Saving 60% this month</div>
+          <div className="text-xs font-semibold">On track</div>
+        </div>
+      </motion.div>
+    </div>
+  );
 }
 
-function CredentialRow({ label, value }) {
-  const copy = () => {
-    navigator.clipboard?.writeText(value);
-  };
+/* ----------------------------------------------------------------
+   Data
+   ---------------------------------------------------------------- */
+const FEATURES = [
+  {
+    icon: TrendingUp,
+    tint: 'bg-mint-500/15 text-mint-600',
+    title: 'Expense tracking, effortless',
+    body: 'Log transactions in seconds — categorised, searchable, filterable, and paginated so it stays fast even with thousands of entries.',
+    tags: ['Filters & search', 'CSV + PDF export'],
+  },
+  {
+    icon: PieChart,
+    tint: 'bg-coral-500/15 text-coral-600',
+    title: 'Monthly budgets that flex',
+    body: 'Set a cap per category and see safe / warning / exceeded states at a glance, with gentle nudges before you overspend — not after.',
+    tags: ['Smart alerts', 'Per-category'],
+  },
+  {
+    icon: Sparkles,
+    tint: 'bg-iris-500/15 text-iris-600',
+    title: 'AI that understands your money',
+    body: 'Ask “where is most of my money going?” and get answers grounded in your real data, plus auto-generated insight cards on the dashboard.',
+    tags: ['Grounded, not guessed', 'Chat + insights'],
+  },
+];
+
+const CHECKLIST = [
+  ['Analytics dashboard', 'Pie, bar, and area charts that update as you spend.'],
+  ['Recurring & savings', 'Track subscriptions and watch savings-goal rings fill.'],
+  ['Dark mode + PWA', 'System-aware theming, installable on any device.'],
+];
+
+const STACK = [
+  { letter: 'M', name: 'MongoDB', sub: 'Document store', icon: Database },
+  { letter: 'E', name: 'Express', sub: 'REST API layer', icon: Server },
+  { letter: 'R', name: 'React', sub: 'UI runtime', icon: Code2 },
+  { letter: 'N', name: 'Node.js', sub: 'Server runtime', icon: Cpu },
+];
+
+const MARQUEE = [
+  'Track expenses',
+  'Set budgets',
+  'Visualise money',
+  'AI insights',
+  'MongoDB',
+  'Express',
+  'React',
+  'Node',
+  'Installable PWA',
+];
+
+/* ----------------------------------------------------------------
+   Page
+   ---------------------------------------------------------------- */
+export default function Landing() {
+  const reduce = useReducedMotion();
+
   return (
-    <div className="flex items-center justify-between gap-2 px-4 py-3 rounded-lg bg-white/80 dark:bg-ink-900/80 border border-ink-100 dark:border-ink-800 font-mono text-sm">
-      <div className="min-w-0">
-        <div className="text-[10px] uppercase tracking-wider font-sans font-semibold text-ink-500 dark:text-ink-400">
-          {label}
+    <div className="relative overflow-x-hidden">
+      <Orbs />
+
+      {/* NAV */}
+      <header className="fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-8 md:pt-5">
+        <nav className="glass-card mx-auto flex max-w-7xl items-center justify-between !rounded-full px-4 py-2.5 md:px-6">
+          <Link to="/" className="flex items-center">
+            <Logo withName size={30} />
+          </Link>
+          <div className="hidden items-center gap-8 text-sm text-ink-600 dark:text-ink-300 md:flex">
+            <a href="#features" className="transition-colors hover:text-ink-900 dark:hover:text-white">Features</a>
+            <a href="#dashboard" className="transition-colors hover:text-ink-900 dark:hover:text-white">Dashboard</a>
+            <a href="#stack" className="transition-colors hover:text-ink-900 dark:hover:text-white">Built with</a>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/login"
+              className="hidden rounded-full px-3 py-1.5 text-sm text-ink-600 transition hover:bg-ink-200/60 dark:text-ink-300 dark:hover:bg-ink-800/60 sm:inline-block"
+            >
+              Sign in
+            </Link>
+            <Link to="/register" className="btn-primary !px-4 !py-2 text-sm">
+              Get started
+            </Link>
+          </div>
+        </nav>
+      </header>
+
+      {/* HERO */}
+      <section className="relative z-10 flex min-h-screen flex-col justify-center px-6 pb-20 pt-32 md:px-10">
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-10 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            <Reveal className="mb-7 flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-mint-500 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-mint-500" />
+              </span>
+              <span className="text-xs font-medium uppercase tracking-[0.2em] text-ink-500">
+                New · AI-powered insights
+              </span>
+            </Reveal>
+
+            <Reveal delay={0.05}>
+              <h1 className="text-[44px] font-semibold leading-[0.98] tracking-tight sm:text-6xl lg:text-7xl">
+                Personal finance,
+                <br />
+                made{' '}
+                <span className="font-serif italic font-normal text-ink-400">
+                  beautiful.
+                </span>
+              </h1>
+            </Reveal>
+
+            <Reveal delay={0.15}>
+              <p className="mt-7 max-w-xl text-lg leading-relaxed text-ink-600 dark:text-ink-300">
+                Track expenses, set monthly budgets, and understand your money on
+                an Apple-inspired dashboard — now with an{' '}
+                <span className="font-medium text-ink-900 dark:text-white">
+                  AI assistant
+                </span>{' '}
+                that answers questions about your spending. Built end-to-end on
+                the MERN stack and installable as a PWA.
+              </p>
+            </Reveal>
+
+            <Reveal delay={0.25}>
+              <div className="mt-9 flex flex-wrap items-center gap-4">
+                <Link to="/register" className="btn-primary !px-6 !py-3.5">
+                  Start tracking free
+                  <ArrowRight size={16} />
+                </Link>
+                <Link
+                  to="/login"
+                  className="btn-ghost border border-ink-300/60 !px-6 !py-3.5 dark:border-ink-700"
+                >
+                  <Play size={14} />
+                  Try the live demo
+                </Link>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.35}>
+              <div className="mt-12 flex items-center gap-8 text-sm text-ink-500">
+                <div>
+                  <div className="text-2xl font-semibold text-ink-900 dark:text-white">
+                    <Counter to={8} />
+                  </div>
+                  <div className="mt-1">Spending categories</div>
+                </div>
+                <div className="h-10 w-px bg-ink-900/10 dark:bg-white/10" />
+                <div>
+                  <div className="text-2xl font-semibold text-ink-900 dark:text-white">
+                    <Counter to={3} />
+                  </div>
+                  <div className="mt-1">Chart types</div>
+                </div>
+                <div className="h-10 w-px bg-ink-900/10 dark:bg-white/10" />
+                <div>
+                  <div className="text-2xl font-semibold text-ink-900 dark:text-white">
+                    <Counter to={100} suffix="%" />
+                  </div>
+                  <div className="mt-1">Free &amp; open source</div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+
+          <div className="lg:col-span-5">
+            <HeroMockup />
+          </div>
         </div>
-        <div className="truncate text-ink-900 dark:text-ink-100">{value}</div>
-      </div>
-      <button
-        onClick={copy}
-        className="flex-shrink-0 p-1.5 rounded-md hover:bg-iris-50 dark:hover:bg-iris-950/40 text-ink-500 dark:text-ink-400 hover:text-iris-600 dark:hover:text-iris-300 transition"
-        aria-label={`Copy ${label}`}
-        title={`Copy ${label}`}
-      >
-        <Copy className="w-4 h-4" />
-      </button>
+      </section>
+
+      {/* MARQUEE */}
+      <section className="relative z-10 overflow-hidden border-y border-ink-900/10 bg-white/40 py-8 dark:border-white/10 dark:bg-ink-900/30">
+        <motion.div
+          className="flex gap-16 whitespace-nowrap font-serif text-2xl italic text-ink-400"
+          animate={reduce ? {} : { x: ['0%', '-50%'] }}
+          transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
+        >
+          {[...MARQUEE, ...MARQUEE].map((word, i) => (
+            <span key={i} className="flex items-center gap-16">
+              {word}
+              <span aria-hidden>·</span>
+            </span>
+          ))}
+        </motion.div>
+      </section>
+
+      {/* FEATURES */}
+      <section id="features" className="relative z-10 px-6 py-28 md:px-10">
+        <div className="mx-auto max-w-7xl">
+          <Reveal className="mb-16 max-w-3xl">
+            <div className="mb-4 text-xs uppercase tracking-[0.2em] text-ink-500">
+              Why FinanceFlow
+            </div>
+            <h2 className="text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
+              Built for the way you{' '}
+              <span className="font-serif italic font-normal text-ink-400">actually</span>{' '}
+              spend.
+            </h2>
+            <p className="mt-5 text-lg text-ink-600 dark:text-ink-300">
+              A finance dashboard that feels like a native app — because it can be
+              one. Install it, open it, and your money is right there.
+            </p>
+          </Reveal>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {FEATURES.map((f, i) => (
+              <Reveal key={f.title} delay={i * 0.1}>
+                <div className="glass-card glass-card-hover h-full p-7">
+                  <div className={`mb-6 grid h-12 w-12 place-items-center rounded-2xl ${f.tint}`}>
+                    <f.icon size={22} />
+                  </div>
+                  <h3 className="mb-2 text-xl font-semibold tracking-tight">{f.title}</h3>
+                  <p className="text-sm leading-relaxed text-ink-600 dark:text-ink-300">
+                    {f.body}
+                  </p>
+                  <div className="mt-6 flex flex-wrap items-center gap-1.5 text-xs">
+                    {f.tags.map((t) => (
+                      <span
+                        key={t}
+                        className="rounded-full bg-ink-900/5 px-2 py-1 dark:bg-white/10"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* DASHBOARD SHOWCASE */}
+      <section id="dashboard" className="relative z-10 px-6 py-28 md:px-10">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-12">
+          <div className="lg:col-span-5">
+            <Reveal>
+              <div className="mb-4 text-xs uppercase tracking-[0.2em] text-ink-500">
+                The dashboard
+              </div>
+              <h2 className="text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
+                Your money,{' '}
+                <span className="font-serif italic font-normal text-ink-400">
+                  at a glance.
+                </span>
+              </h2>
+              <p className="mt-5 text-lg leading-relaxed text-ink-600 dark:text-ink-300">
+                Every screen is designed to disappear. Big numbers where they
+                matter, soft transitions where they don't. It's finance that
+                doesn't feel like finance.
+              </p>
+            </Reveal>
+
+            <ul className="mt-8 space-y-4">
+              {CHECKLIST.map(([title, sub], i) => (
+                <Reveal key={title} delay={0.1 + i * 0.1}>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-0.5 grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-gradient-brand text-white">
+                      <Check size={12} strokeWidth={3} />
+                    </span>
+                    <div>
+                      <div className="font-medium">{title}</div>
+                      <div className="text-sm text-ink-600 dark:text-ink-400">{sub}</div>
+                    </div>
+                  </li>
+                </Reveal>
+              ))}
+            </ul>
+          </div>
+
+          <div className="lg:col-span-7">
+            <Reveal delay={0.15}>
+              <div className="relative">
+                <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-iris-500/20 to-violet-500/20 blur-2xl" />
+                <div className="glass-card relative p-6 md:p-8">
+                  <div className="mb-6 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-ink-500">Net saved this year</div>
+                      <div className="text-4xl font-semibold tracking-tight">
+                        ₹<Counter to={148200} />
+                      </div>
+                      <div className="mt-1 text-xs font-medium text-mint-600">
+                        ↑ 18% vs last year
+                      </div>
+                    </div>
+                    <div className="flex gap-2 text-xs">
+                      <span className="rounded-full bg-gradient-brand px-3 py-1.5 text-white">1Y</span>
+                      <span className="rounded-full px-3 py-1.5 text-ink-500">6M</span>
+                      <span className="rounded-full px-3 py-1.5 text-ink-500">1M</span>
+                    </div>
+                  </div>
+
+                  {/* animated line chart */}
+                  <svg viewBox="0 0 400 160" className="h-40 w-full">
+                    <defs>
+                      <linearGradient id="ff-fill" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#6366f1" stopOpacity="0.22" />
+                        <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <motion.path
+                      d="M0,120 C40,100 60,60 100,70 C140,80 160,40 200,50 C240,60 260,30 300,35 C340,40 360,20 400,25 L400,160 L0,160 Z"
+                      fill="url(#ff-fill)"
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 1, delay: 0.6 }}
+                    />
+                    <motion.path
+                      d="M0,120 C40,100 60,60 100,70 C140,80 160,40 200,50 C240,60 260,30 300,35 C340,40 360,20 400,25"
+                      fill="none"
+                      className="stroke-iris-500"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      initial={{ pathLength: 0 }}
+                      whileInView={{ pathLength: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 1.8, ease: EASE, delay: 0.4 }}
+                    />
+                  </svg>
+
+                  <div className="mt-6 grid grid-cols-4 gap-3">
+                    {[
+                      ['Income', '₹55,000'],
+                      ['Spent', '₹20,236'],
+                      ['Saved', '₹34,764', 'text-mint-600'],
+                      ['Budgets', '8'],
+                    ].map(([label, value, cls]) => (
+                      <div
+                        key={label}
+                        className="rounded-2xl border border-ink-200/50 bg-white/60 p-3 dark:border-white/5 dark:bg-ink-900/40"
+                      >
+                        <div className="text-[10px] text-ink-500">{label}</div>
+                        <div className={`mt-1 text-base font-semibold ${cls || ''}`}>
+                          {value}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* STACK */}
+      <section id="stack" className="relative z-10 px-6 py-28 md:px-10">
+        <div className="mx-auto max-w-7xl">
+          <Reveal className="mx-auto mb-16 max-w-2xl text-center">
+            <div className="mb-4 text-xs uppercase tracking-[0.2em] text-ink-500">
+              Engineered to last
+            </div>
+            <h2 className="text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
+              Built end-to-end on the{' '}
+              <span className="font-serif italic font-normal">MERN</span> stack.
+            </h2>
+            <p className="mt-5 text-lg text-ink-600 dark:text-ink-300">
+              A modern codebase from database to UI — installable as a PWA, with a
+              provider-agnostic AI layer running on Llama 3.3 70B via Groq.
+            </p>
+          </Reveal>
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {STACK.map((s, i) => (
+              <Reveal key={s.name} delay={i * 0.1}>
+                <div className="glass-card glass-card-hover p-7 text-center">
+                  <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-gradient-brand text-white shadow-glow">
+                    <s.icon size={20} />
+                  </div>
+                  <div className="text-3xl font-semibold tracking-tight">{s.letter}</div>
+                  <div className="mt-1 text-sm font-medium">{s.name}</div>
+                  <div className="mt-1 text-xs text-ink-500">{s.sub}</div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            {[
+              [Smartphone, 'Installable PWA', 'Add to home screen, open like an app'],
+              [ShieldCheck, 'JWT + bcrypt auth', 'Passwords hashed, sessions signed'],
+              [Sparkles, 'AI insights', 'Grounded answers about your spending'],
+            ].map(([Icon, title, sub], i) => (
+              <Reveal key={title} delay={i * 0.1}>
+                <div className="glass-card flex items-center gap-4 !rounded-2xl p-5">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-brand text-white">
+                    <Icon size={18} />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">{title}</div>
+                    <div className="text-xs text-ink-500">{sub}</div>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section id="cta" className="relative z-10 px-6 py-28 md:px-10">
+        <Reveal className="mx-auto max-w-5xl">
+          <div className="glass-card relative overflow-hidden !rounded-[40px] p-10 text-center md:p-16">
+            <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-br from-mint-500/40 to-transparent blur-2xl" />
+            <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-tr from-iris-500/40 to-transparent blur-2xl" />
+            <div className="relative">
+              <div className="mb-6 inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-ink-500">
+                <span className="h-px w-8 bg-ink-400" />
+                Free forever
+                <span className="h-px w-8 bg-ink-400" />
+              </div>
+              <h2 className="text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl">
+                Start making your money
+                <br />
+                <span className="font-serif italic font-normal">make sense.</span>
+              </h2>
+              <p className="mx-auto mt-6 max-w-xl text-lg text-ink-600 dark:text-ink-300">
+                Create a free account, or jump straight into the live demo — no
+                signup, real seeded data, working AI assistant.
+              </p>
+              <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Link to="/register" className="btn-primary !px-6 !py-3.5">
+                  Create free account
+                  <ArrowRight size={16} />
+                </Link>
+                <Link
+                  to="/login"
+                  className="btn-ghost border border-ink-300/60 !px-6 !py-3.5 dark:border-ink-700"
+                >
+                  Try the demo
+                </Link>
+              </div>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-ink-500">
+                <span className="flex items-center gap-1.5">
+                  <Check size={12} strokeWidth={2.5} /> No card required
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Check size={12} strokeWidth={2.5} /> demo@financeflow.app / demo1234
+                </span>
+                <span className="hidden items-center gap-1.5 sm:flex">
+                  <Check size={12} strokeWidth={2.5} /> Installable PWA
+                </span>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="relative z-10 border-t border-ink-900/10 px-6 py-12 dark:border-white/10 md:px-10">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row">
+          <div className="flex items-center gap-2">
+            <Logo withName size={26} />
+            <span className="ml-2 text-xs text-ink-400">© {new Date().getFullYear()}</span>
+          </div>
+          <div className="flex items-center gap-6 text-xs text-ink-500">
+            <Link to="/login" className="transition hover:text-ink-900 dark:hover:text-white">
+              Sign in
+            </Link>
+            <a
+              href="https://github.com/nakwafurkhan/FinanceFlow"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 transition hover:text-ink-900 dark:hover:text-white"
+            >
+              <Github size={14} /> GitHub
+            </a>
+          </div>
+          <div className="text-xs text-ink-400">
+            Built by{' '}
+            <a
+              href="https://github.com/nakwafurkhan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-iris-600 hover:underline dark:text-iris-400"
+            >
+              Nakwa Furkhan
+            </a>{' '}
+            · MERN + PWA
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

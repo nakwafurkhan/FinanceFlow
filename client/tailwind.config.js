@@ -15,6 +15,9 @@ export default {
           'system-ui',
           'sans-serif',
         ],
+        // Editorial accent face used for italic headline highlights on the
+        // landing page. Loaded in index.html.
+        serif: ['"Instrument Serif"', 'ui-serif', 'Georgia', 'serif'],
         mono: [
           '"JetBrains Mono"',
           '"SF Mono"',
