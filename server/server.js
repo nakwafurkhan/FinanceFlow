@@ -52,12 +52,18 @@ app.use(compression());
 // 5) CORS
 //
 // Why this is shaped the way it is:
-//   - We use an allow-list (CLIENT_ORIGIN can be a comma-separated list of
-//     allowed origins, e.g. "http://localhost:5173,https://myapp.vercel.app").
-//   - The spec disallows `credentials: true` together with `origin: "*"`, so
-//     we must echo a specific origin back. The function form below does that.
-//   - Tools like curl/postman send no Origin header — we allow those for
-//     local development convenience.
+//   - CLIENT_ORIGIN is a comma-separated allow-list (e.g. localhost + the
+//     canonical production domain).
+//   - We ALSO allow any *.vercel.app origin. Vercel preview/branch/alias
+//     deployments get a per-deploy hashed subdomain
+//     (e.g. finance-flow-abc123-team.vercel.app) that changes every push, so
+//     they can't be hardcoded. Without this, logging in on any URL other than
+//     the one pinned in CLIENT_ORIGIN fails with an opaque CORS error.
+//     This is safe here: auth uses a Bearer token in the Authorization header
+//     (not cookies), so a stray origin can't ride on ambient credentials.
+//   - The spec disallows `credentials: true` with `origin: "*"`, so we echo a
+//     specific origin back via the function form.
+//   - Tools like curl/postman send no Origin header — allowed for local dev.
 const normaliseOrigin = (s) => {
   if (!s) return '';
   try {
@@ -73,18 +79,24 @@ const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
   .map(normaliseOrigin)
   .filter(Boolean);
 
-console.log('CORS allow-list:', allowedOrigins);
+// Any Vercel deployment of this app: production, previews, and project aliases.
+const VERCEL_ORIGIN = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
+
+const isAllowedOrigin = (incoming) =>
+  allowedOrigins.includes(incoming) || VERCEL_ORIGIN.test(incoming);
+
+console.log('CORS allow-list:', allowedOrigins, '(+ *.vercel.app)');
 
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       const incoming = normaliseOrigin(origin);
-      if (allowedOrigins.includes(incoming)) return callback(null, true);
+      if (isAllowedOrigin(incoming)) return callback(null, true);
       console.warn(
         `CORS: rejected origin "${origin}" (normalised: "${incoming}"). Allow-list: ${JSON.stringify(
           allowedOrigins
-        )}`
+        )} (+ *.vercel.app)`
       );
       return callback(null, false);
     },
@@ -113,6 +125,7 @@ app.get('/api/health', (req, res) => {
     name: 'FinanceFlow API',
     env: process.env.NODE_ENV || 'development',
     allowedOrigins,
+    vercelWildcard: true,
     aiEnabled: !!process.env.OPENAI_API_KEY,
     time: new Date().toISOString(),
   });
